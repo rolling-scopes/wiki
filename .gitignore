@@ -1,0 +1,8 @@
+# Tandi Garden — raw sources stay private (PII potential).
+# Only summary cards in retros/, audits/, sources/ are committed.
+retros/raw/
+audits/raw/
+sources/*/raw/
+
+# Editor crud
+.DS_Store
