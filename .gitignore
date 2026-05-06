@@ -4,5 +4,8 @@ retros/raw/
 audits/raw/
 sources/*/raw/
 
+# Working drafts, scratch material — never published.
+temp/
+
 # Editor crud
 .DS_Store
