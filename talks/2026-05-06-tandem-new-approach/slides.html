@@ -5,53 +5,148 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tandem &amp; The New Approach</title>
 
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&display=swap" rel="stylesheet">
+
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reset.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/theme/white.css" id="theme">
 
   <style>
-    .reveal { font-size: 24px; }
+    /* ---------- Base ---------- */
+    .reveal {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif;
+      font-size: 22px;
+      font-weight: 400;
+      letter-spacing: -0.005em;
+      color: #1d1d1f;
+    }
     .reveal .slides { text-align: left; }
-    .reveal .slides section { padding: 0 1em; }
+    .reveal .slides section {
+      padding: 0 2em;
+      box-sizing: border-box;
+    }
 
-    .reveal h1 { font-size: 1.8em; margin-bottom: 0.5em; }
-    .reveal h2 { font-size: 1.4em; margin-bottom: 0.5em; }
-    .reveal h3 { font-size: 1.15em; margin-bottom: 0.6em; color: #444; }
-    .reveal h3 + p:first-of-type,
-    .reveal h3 + ul:first-of-type { margin-top: 0; }
+    /* ---------- Headings (Playfair, Apple-restrained) ---------- */
+    .reveal h1, .reveal h2, .reveal h3, .reveal h4 {
+      font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
+      font-weight: 600;
+      text-transform: none;            /* kill white theme's uppercase */
+      letter-spacing: -0.015em;
+      color: #111;
+      line-height: 1.15;
+      margin-top: 0;
+      margin-bottom: 0.55em;
+    }
+    .reveal h1 { font-size: 2.6em; font-weight: 700; }
+    .reveal h2 { font-size: 1.7em; }
+    .reveal h3 { font-size: 1.25em; color: #333; }
 
-    .reveal p, .reveal li { line-height: 1.4; }
-    .reveal ul, .reveal ol { margin: 0.4em 0 0.4em 1.2em; }
-    .reveal li { margin: 0.25em 0; }
-    .reveal li > ul { margin-top: 0.2em; }
+    /* ---------- Body text ---------- */
+    .reveal p, .reveal li {
+      line-height: 1.5;
+      color: #1d1d1f;
+    }
+    .reveal p { margin: 0.5em 0; }
+    .reveal strong { color: #000; font-weight: 600; }
 
+    .reveal ul, .reveal ol {
+      margin: 0.4em 0 0.4em 1.4em;
+      padding: 0;
+    }
+    .reveal li { margin: 0.3em 0; }
+    .reveal li > ul, .reveal li > ol { margin-top: 0.3em; margin-bottom: 0; }
+
+    /* ---------- Blockquotes ---------- */
     .reveal blockquote {
+      font-family: 'Playfair Display', Georgia, serif;
       font-style: italic;
-      border-left: 4px solid #888;
-      padding: 0.5em 1em;
-      margin: 0.6em 0;
-      background: rgba(0,0,0,0.03);
+      font-weight: 500;
+      font-size: 1.05em;
+      line-height: 1.45;
+      color: #2c2c2e;
+      background: transparent;
+      border-left: 2px solid #0071e3;
+      padding: 0.3em 0 0.3em 1.2em;
+      margin: 0.9em 0;
       box-shadow: none;
       width: auto;
     }
+    .reveal blockquote em { font-style: normal; }
 
+    /* ---------- Links (Apple blue, subtle) ---------- */
+    .reveal a {
+      color: #0071e3;
+      text-decoration: none;
+      border-bottom: 1px solid rgba(0, 113, 227, 0.25);
+      transition: border-color 120ms ease;
+    }
+    .reveal a:hover { border-bottom-color: #0071e3; }
+
+    /* ---------- Tables ---------- */
     .reveal table {
-      font-size: 0.85em;
+      font-size: 0.88em;
       margin: 0.5em 0;
       border-collapse: collapse;
+      width: 100%;
     }
-    .reveal th, .reveal td {
-      padding: 0.4em 0.6em;
-      border: 1px solid #ddd;
+    .reveal th {
+      background: #fafafa;
+      font-weight: 600;
+      text-align: left;
+      padding: 0.5em 0.8em;
+      border-bottom: 1.5px solid #d2d2d7;
+      color: #1d1d1f;
+    }
+    .reveal td {
+      padding: 0.45em 0.8em;
+      border-bottom: 1px solid #f0f0f2;
       vertical-align: top;
     }
-    .reveal th { background: #f5f5f5; }
+    .reveal tr:last-child td { border-bottom: none; }
 
-    .reveal a { color: #2a76dd; }
-    .reveal strong { color: #111; }
+    /* ---------- Title slide (first) ---------- */
+    .reveal .slides > section:first-child {
+      text-align: center;
+    }
+    .reveal .slides > section:first-child h1 {
+      font-size: 4em;
+      letter-spacing: -0.025em;
+      margin-bottom: 0.3em;
+    }
+    .reveal .slides > section:first-child p {
+      font-size: 1.25em;
+      color: #444;
+      max-width: 28em;
+      margin: 0.4em auto;
+      line-height: 1.4;
+    }
+    .reveal .slides > section:first-child p:last-child {
+      margin-top: 2.5em;
+      font-size: 0.95em;
+      color: #6e6e73;
+    }
 
-    /* Title slide gets centred */
-    .reveal section.title-slide { text-align: center; }
+    /* ---------- Closing slide (last) ---------- */
+    .reveal .slides > section:last-child {
+      text-align: center;
+    }
+    .reveal .slides > section:last-child h1 {
+      font-size: 5em;
+      font-weight: 600;
+      letter-spacing: -0.03em;
+    }
+
+    /* ---------- Controls / chrome (subtle) ---------- */
+    .reveal .controls { color: #86868b; }
+    .reveal .progress { color: #0071e3; height: 3px; }
+    .reveal .slide-number {
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      color: #86868b;
+      background: transparent;
+    }
   </style>
 </head>
 <body>
@@ -60,15 +155,15 @@
       <section data-markdown data-separator="^\s*---\s*$">
         <textarea data-template>
 
-### Slide 1 — Title
+# RS Tandem
 
-**RS Tandem**
 A new format for project-based learning at Rolling Scopes School.
+
 Dzmitry Varabei — coordinator, leader of the Rolling Scopes community.
 
 ---
 
-### Slide 2 — The problem we started from
+## The problem we started from
 
 Most school tasks are **formal requirements**.
 
@@ -92,7 +187,7 @@ What this means for us, the school:
 
 ---
 
-### Slide 3 — What we want to measure instead
+## What we want to measure instead
 
 We want to evaluate **understanding, not output**.
 
@@ -106,7 +201,7 @@ This is what AI cannot fake for the student.
 
 ---
 
-### Slide 4 — How we evaluate understanding
+## How we evaluate understanding
 
 We changed three things at once.
 
@@ -122,7 +217,7 @@ Multiple defences across the course — different audiences, different formats. 
 
 ---
 
-### Slide 5 — The defences (real examples)
+## The defences
 
 Every student goes through several formats:
 
@@ -137,7 +232,7 @@ By the fourth retelling, the student is no longer reciting — they own it.
 
 ---
 
-### Slide 6 — Problem #2: loneliness
+## The second problem: loneliness
 
 Self-paced courses have a quiet failure mode: the student is alone with the material, and most students do not survive that.
 
@@ -154,7 +249,7 @@ Either they prepare and learn, or they self-select out early. Both outcomes are 
 
 ---
 
-### Slide 7 — How we fight loneliness
+## How we fight loneliness
 
 Four structural choices:
 
@@ -167,7 +262,7 @@ Nobody finishes the course alone.
 
 ---
 
-### Slide 8 — The project: RS Tandem
+## The project
 
 The course is built around one shared **theme** — but the project itself is the team's to design.
 
@@ -183,7 +278,7 @@ The course is built around one shared **theme** — but the project itself is th
 
 ---
 
-### Slide 9 — Timeline (the ideal flow)
+## Timeline — the ideal flow
 
 How the course is meant to run, end to end:
 
@@ -198,7 +293,7 @@ How the course is meant to run, end to end:
 
 ---
 
-### Slide 10 — Meet Tandi, our AI co-pilot
+## Meet Tandi, our AI co-pilot
 
 Mentors stopped reviewing PRs. Something had to fill the gap.
 
@@ -216,7 +311,7 @@ Tandi is not a replacement for mentors. Tandi is the layer that **lets** mentors
 
 ---
 
-### Slide 11 — What we learned
+## What we learned
 
 > Before, RS School produced people who could write code.
 > Code was the scarce thing.
@@ -238,7 +333,7 @@ We also tried to make AI grade the diaries themselves — to score "depth of ref
 
 ---
 
-### Slide 12 — Thank you
+# Thank you
 
         </textarea>
       </section>
@@ -254,8 +349,9 @@ We also tried to make AI grade the diaries themselves — to score "depth of ref
       controls: true,
       progress: true,
       width: 1280,
-      height: 800,
-      margin: 0.06,
+      height: 900,
+      margin: 0.05,
+      transition: 'slide',
       plugins: [ RevealMarkdown ]
     });
   </script>
