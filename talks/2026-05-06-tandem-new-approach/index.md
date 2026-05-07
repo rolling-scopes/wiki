@@ -1,13 +1,22 @@
 ---
 type: talk
 title: Tandem & The New Approach
+language: en
 date: 2026-05-06
 speaker: Dzmitry Varabei
 status: draft
-last_updated: 2026-05-06
+last_updated: 2026-05-07
+siblings:
+  - index.ru.md   # Russian translation of this document
+  - slides.html   # reveal.js deck (English only)
 ---
 
 # Tandem & The New Approach
+
+> **Sibling artifacts** in this folder (kept in sync; last sync 2026-05-07):
+> - `index.md` — English source (this file)
+> - `index.ru.md` — Russian translation
+> - `slides.html` — reveal.js deck (English only; not translated)
 
 ### Slide 1 — Title
 
