@@ -22,7 +22,9 @@ related:
   - decisions/tests-as-exception-not-default.md
   - decisions/mentor-onboarding-intent.md
   - decisions/mentor-as-defence-listener.md
+  - decisions/team-warmup-before-final.md
   - concepts/tandem-approach/team-playbook.md
+  - concepts/tandem-approach/team-playbook.en.md
 ---
 
 # Wiki Index
@@ -45,11 +47,12 @@ _(пока пусто)_
 - `decisions/tests-as-exception-not-default.md` — тесты в курсе не идут по умолчанию; остаются только там, где у координатора есть осознанная причина [active]
 - `decisions/mentor-onboarding-intent.md` — менторов отбираем явно; направление, не текущая практика (capacity gap зафиксирован) [active]
 - `decisions/mentor-as-defence-listener.md` — ментор слушатель защит, не ревьюер PR; PR проверяет кодинг-агент [active]
+- `decisions/team-warmup-before-final.md` — каждый курс с командным финалом обязан иметь короткий командный warm-up (1–2 недели) перед финалом [active]
 
 ## concepts/
 - `concepts/checkpoint.md` — паттерн чекпоинта: id, дата старта, правила со scope/points/params, алгоритм оценки [active]
 - `concepts/tandi-voice.md` — пересказ voice guide для координаторов и агентов [active]
-- `concepts/tandem-approach/team-playbook.md` — чеклисты, анти-паттерны и протоколы командной работы [active]
+- `concepts/tandem-approach/team-playbook.md` — чеклисты, анти-паттерны и протоколы командной работы [active] · EN: `team-playbook.en.md`
 
 ## incidents/
 - `incidents/tandem-q3-final-task-scope-creep.md` — ТЗ финала Tandem 2026 Q3 расползалось по неделям [active]
