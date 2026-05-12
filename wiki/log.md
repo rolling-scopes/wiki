@@ -2,7 +2,7 @@
 type: index
 title: Wiki Log
 status: active
-last_updated: 2026-04-29
+last_updated: 2026-05-12
 sources:
   - schema.md
 related:
@@ -41,3 +41,6 @@ Ingest митинга RS School × EPAM «Possible opportunities» 2026-04-30 (1
 
 ## [2026-05-05] update | retro candidates pass closed (themes 3–5: deferred / no-action) | Dzmitry Varabei (via Claude)
 Темный пасс по 5 кандидатам из `retros/2026-Q3-rs-tandem-retro.md` и `retros/2024-Q4-js-fe-school-feedback.md` завершён. Темы 1 и 2 закрыты тремя decision-страницами (см. предыдущие записи). Тема 3 «Stage 1 → Stage 2 переход» — **DEFERRED**: сигнал из мёртвого формата (Tandem/Angular/AI Systems не имеют Stage 1/Stage 2 разделения), federation-rule преждевременный, ждём ретро Angular после Sprint 1→2. Тема 4 «Объём чекпоинтов / дневников» — **DEFERRED**: намерение «дневник = инструмент мышления, не отчётности» уже зафиксировано в `mentor-as-defence-listener.md`; конкретная калибровка (1–2 записи vs другое) откладывается до сложения практики. Тема 5 «CommerceTools» — **NO ACTION**: мёртвый формат, federation-rule не складывается. Один кандидат из Q3 retro card — «сколько защит на финале — оптимально» — **NOT YET DISCUSSED**, оставлен на следующий проход. Карты `retros/2026-Q3-rs-tandem-retro.md` и `retros/2024-Q4-js-fe-school-feedback.md` обновлены с явными статусами по каждому кандидату.
+
+## [2026-05-12] ingest | concepts/tandem-approach/team-playbook.md | Dzmitry Varabei (via Claude)
+Перенос плейбука командной работы из `docs/editorial/teamwork-playbook.md` (parent repo `rs-tandem-dashboard`) в Wiki. Заведён sub-folder `concepts/tandem-approach/` — кластер под пере-используемый формат обучения (origin — RS Tandem, обкатка через talk «Tandem & The New Approach», 2026-05-06). Sub-folder следует §2 schema.md («подпапки внутри категории допустимы при разрастании»). Дальше в кластер планируются `diary.md`, `defences.md`, `scoring.md` и umbrella `overview.md`, когда наберётся 2-3 файла. Editorial-оригинал удалён — wiki-версия каноническая (плейбук уже в формате референса, отдельный raw не нужен). Источники — обе ретроспективы (`retros/{2026-Q3-rs-tandem-retro,2024-Q4-js-fe-school-feedback}.md`) и аудит Angular (`audits/angular-2026-04-29-team-stage.md`). Связан с `decisions/{mentor-as-defence-listener,mentor-staffing-policy,peer-review-precedes-defence,lock-rules-at-kickoff}` и `concepts/checkpoint.md`.

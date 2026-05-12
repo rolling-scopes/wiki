@@ -2,7 +2,7 @@
 type: index
 title: Wiki Index
 status: active
-last_updated: 2026-05-05
+last_updated: 2026-05-12
 sources:
   - schema.md
 related:
@@ -22,6 +22,7 @@ related:
   - decisions/tests-as-exception-not-default.md
   - decisions/mentor-onboarding-intent.md
   - decisions/mentor-as-defence-listener.md
+  - concepts/tandem-approach/team-playbook.md
 ---
 
 # Wiki Index
@@ -48,6 +49,7 @@ _(пока пусто)_
 ## concepts/
 - `concepts/checkpoint.md` — паттерн чекпоинта: id, дата старта, правила со scope/points/params, алгоритм оценки [active]
 - `concepts/tandi-voice.md` — пересказ voice guide для координаторов и агентов [active]
+- `concepts/tandem-approach/team-playbook.md` — чеклисты, анти-паттерны и протоколы командной работы [active]
 
 ## incidents/
 - `incidents/tandem-q3-final-task-scope-creep.md` — ТЗ финала Tandem 2026 Q3 расползалось по неделям [active]
