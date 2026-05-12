@@ -2,7 +2,7 @@
 <!--
   Tandem & The New Approach — reveal.js deck (English).
 
-  Sibling artifacts in this folder (kept in sync; last sync 2026-05-07):
+  Sibling artifacts in this folder (kept in sync; last sync 2026-05-12):
     - index.md      English source / fact sheet
     - index.ru.md   Russian translation of the source
     - slides.html   this file — reveal.js deck (English only)
@@ -15,7 +15,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tandem &amp; The New Approach</title>
-  <meta name="last-sync" content="2026-05-07">
+  <meta name="last-sync" content="2026-05-12">
   <meta name="siblings" content="index.md, index.ru.md">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -165,14 +165,33 @@
 <body>
   <div class="reveal">
     <div class="slides">
-      <section data-markdown data-separator="^\s*---\s*$">
+      <section data-markdown data-separator="^\s*---\s*$" data-separator-vertical="^\s*--\s*$">
         <textarea data-template>
 
 # RS Tandem
 
 A new format for project-based learning at Rolling Scopes School.
 
-Dzmitry Varabei — coordinator, leader of the Rolling Scopes community.
+---
+
+## Engineers, in the AI era
+
+For many years, RS School has been training engineers — people you can rely on, people you can trust to solve real problems.
+
+In the era of AI, Andrej Karpathy puts the distinction sharply:
+
+> **Karpathy: vibe coding ≠ agentic engineering**
+>
+> Vibe coding raises the floor — anyone can vibe code anything.
+>
+> Agentic engineering **preserves the quality bar** — you're still responsible for your software, but you can go faster.
+> — Andrej Karpathy
+
+---
+
+## The question we ask ourselves
+
+How do we **maintain the quality of our graduates**, when AI can solve any coding task quickly?
 
 ---
 
@@ -181,10 +200,15 @@ Dzmitry Varabei — coordinator, leader of the Rolling Scopes community.
 Most school tasks are **formal requirements**.
 
 Example: [async-race task](https://github.com/rolling-scopes-school/tasks/blob/master/epam/async-race.md)
+
+<small>
+
 - Create a repository.
 - Build a specific widget / view.
 - Use React.
 - Use Conventional Commits.
+
+</small>
 
 What this means for the student:
 - I am graded on whether the requirements are checked off.
@@ -194,9 +218,6 @@ What this means for the student:
 What this means for us, the school:
 - We cannot tell whether the student wrote the code, copied it, or generated it.
 - A passing grade no longer proves the student learned anything.
-
-> *"Maybe not today, but soon every student will have their own personal AI agent. So what, exactly, are we measuring?"*
-> — internal mentor weekly, April 2026
 
 ---
 
@@ -242,6 +263,62 @@ Every student goes through several formats:
 
 Same project, retold to four different audiences.
 By the fourth retelling, the student is no longer reciting — they own it.
+
+---
+
+## Engineers and their journals
+
+The diary is not a school invention. Serious engineers and scientists have kept working journals for centuries.
+
+Six figures, six approaches — chronological.
+
+--
+
+### Leonardo da Vinci (1452–1519)
+
+The great polymath of the Renaissance. Designed concepts for the tank, the parachute, the spotlight, the helicopter — centuries ahead of his time.
+
+**The journals:** over 7,000 surviving pages — the famous "Codices." Written in mirror script (right to left). A single page might hold complex engineering diagrams, anatomical sketches, philosophical musings, and an everyday shopping list, side by side.
+
+--
+
+### Thomas Edison (1847–1931)
+
+Inventor (phonograph, the practical incandescent lamp), founder of the first industrial research laboratory at Menlo Park.
+
+**The journals:** about 5 million pages of lab notebooks. Required himself and every engineer in his lab to document every idea and every failed experiment. Kept in numbered notebooks.
+
+--
+
+### Nikola Tesla (1856–1943)
+
+Electrical engineer and inventor. AC power systems, the induction motor, early radio work.
+
+**The journals:** in the lab, daily and meticulous — exact circuit parameters, diagrams, calculations, observations from experiments. Tesla trusted his phenomenal memory outside the lab, but on the workbench he demanded numbers on paper.
+
+--
+
+### Richard Feynman (1918–1988)
+
+Theoretical physicist, Nobel laureate, founder of quantum electrodynamics and the famous Feynman diagrams.
+
+**The journals:** treated paper not as a storage of thought but as the work itself. *"I actually did the work on the paper. The paper isn't a record of my thinking — it IS my thinking."*
+
+--
+
+### Edsger Dijkstra (1930–2002)
+
+Pioneer of computer science. Structured programming, the shortest-path algorithm, the discipline of program correctness.
+
+**The journals:** the **EWDs (Edsger W. Dijkstra Manuscripts)** — numbered handwritten essays (over 1,300, from EWD0 to EWD1318). Hand-wrote rigorous proofs of algorithm correctness before code ever ran on a machine.
+
+--
+
+### John Carmack (1970– )
+
+Programmer behind Wolfenstein 3D, Doom, Quake. Pioneer of real-time 3D graphics, aerospace engineer (Armadillo), VR pioneer (Oculus).
+
+**The journals:** the famous `.plan` files. Through the 1990s, daily plain-text log of his work, public over the Finger protocol — what was fixed, what was optimized, what he was thinking that day.
 
 ---
 
@@ -315,34 +392,27 @@ Mentors stopped reviewing PRs. Something had to fill the gap.
 - publishes a weekly issue — like a school newspaper, but generated,
 - responds to student GitHub issues directly.
 
-**What Tandi does not do: grading.**
-Scoring is a separate deterministic component, by design.
-Tandi notices and writes; rules assign points.
-A student's score never depends on an LLM's mood.
+*Live: [rollingscopes.github.io/rs-tandem-observer](https://rollingscopes.github.io/rs-tandem-observer/)*
 
 Tandi is not a replacement for mentors. Tandi is the layer that **lets** mentors stop doing checklist review and start doing the work only humans can do — defences, judgement, mentorship.
 
 ---
 
-## What we learned
+## How do we actually teach AI?
 
-> Before, RS School produced people who could write code.
-> Code was the scarce thing.
-> Code is no longer scarce.
-> What's scarce now is people who can think like engineers.
+Our answer: **we lead by personal example.**
 
-Two beliefs we are testing in production:
+Our tools are open-source — **RS App**, our analog of `learn.epam.com`. We build them with AI, in public, and students watch the work.
 
-1. **You cannot grade output anymore. You can only grade understanding.** AI broke the old contract. Diaries + defences are our answer.
-2. **Self-paced is a euphemism for "left alone".** Teams, public diaries, and a calendar of defences put students in a room with other people again — even online.
+A few examples — not the full list:
 
-**One honest failure along the way.**
-We also tried to make AI grade the diaries themselves — to score "depth of reflection." It gave a 0 to a student who wrote two entries every week and had passed every prior checkpoint. The students pushed back. We listened. The lesson stuck: judgement lives with humans. AI helps them see — it does not replace seeing.
+- **Building our tools with AI** — [walkthrough](https://www.youtube.com/watch?v=ONisMK84C-Q&t=1s)
+- **Live coding with Claude Code** — recorded sessions: [one](https://www.youtube.com/watch?v=gM1qxx9c_9g&t=4564s) · [two](https://www.youtube.com/watch?v=CQodPVwj2ig)
+- **Guest talks** — *tomorrow:* "Welcome the Dark Factory" by **Uladzimir Klyshevich**, Director, AI Technology Solutions at EPAM Systems
 
-**What our latest cohort retro tells us** (56 respondents):
-- Mentor / student technical interviews — **4.88 / 5** (highest of any component, 49/56 gave full marks).
-- Automated tests — **3.73 / 5** (lowest). Direct quote: *"LLMs killed the point of tests."*
-- The signal is consistent: students value human dialogue. They distrust formats that AI can quietly solve for them.
+*Full archive:* [youtube.com/@RollingScopesSchool/streams](https://www.youtube.com/@RollingScopesSchool/streams)
+
+Students apply any of these technologies in their own projects — and grow into better engineers.
 
 ---
 
