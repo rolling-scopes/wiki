@@ -2,7 +2,7 @@
 type: index
 title: Wiki Index
 status: active
-last_updated: 2026-05-12
+last_updated: 2026-05-27
 sources:
   - schema.md
 related:
@@ -23,6 +23,7 @@ related:
   - decisions/mentor-onboarding-intent.md
   - decisions/mentor-as-defence-listener.md
   - decisions/team-warmup-before-final.md
+  - decisions/rs-app-agentic-rearchitecture.md
   - concepts/tandem-approach/team-playbook.md
   - concepts/tandem-approach/team-playbook.en.md
 ---
@@ -48,6 +49,7 @@ _(пока пусто)_
 - `decisions/mentor-onboarding-intent.md` — менторов отбираем явно; направление, не текущая практика (capacity gap зафиксирован) [active]
 - `decisions/mentor-as-defence-listener.md` — ментор слушатель защит, не ревьюер PR; PR проверяет кодинг-агент [active]
 - `decisions/team-warmup-before-final.md` — каждый курс с командным финалом обязан иметь короткий командный warm-up (1–2 недели) перед финалом [active]
+- `decisions/rs-app-agentic-rearchitecture.md` — open ADR: переделка RS App под agentic-first комьюнити-платформу (Person/SystemActor/MentoringLink, OpenAPI+MCP+Context Packs, scope-based auth, 4 модели монетизации) [draft]
 
 ## concepts/
 - `concepts/checkpoint.md` — паттерн чекпоинта: id, дата старта, правила со scope/points/params, алгоритм оценки [active]

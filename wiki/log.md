@@ -2,7 +2,7 @@
 type: index
 title: Wiki Log
 status: active
-last_updated: 2026-05-12
+last_updated: 2026-05-27
 sources:
   - schema.md
 related:
@@ -56,3 +56,6 @@ Ingest митинга RS School × EPAM «Possible opportunities» 2026-04-30 (1
 
 ## [2026-05-12] update | team-warmup decision flipped to active + EN playbook sibling | Dzmitry Varabei (via Claude)
 Две вещи: (1) `decisions/team-warmup-before-final.md` переведён с `status: draft` на `status: active` по явному апруву Воробья. Index.md обновлён `[draft]` → `[active]`. (2) Создан English-сиблинг плейбука: `concepts/tandem-approach/team-playbook.en.md` — полный перевод текущего состояния (после всех 9 issues, GitHub Flow, design block). В RU и EN файлах в начале добавлена строка-переключатель «Languages: …». Это первый прецедент EN-перевода в Wiki — naming convention `team-playbook.en.md` (extension-style суффикс, sorts рядом с оригиналом). RU считается каноническим, EN — синхронизированный перевод. Если будут расхождения по содержанию — правится сначала RU, затем EN. Index.md обновлён: в строке плейбука добавлен пометка `· EN: team-playbook.en.md`, во frontmatter related — оба файла. Раздел `concepts/tandem-approach/` теперь имеет 2 файла; кластер растёт по плану из ingest-записи 2026-05-12 (планируются `diary.md`, `defences.md`, `scoring.md`, `overview.md`).
+
+## [2026-05-27] ingest | rs-app-agentic-rearchitecture (open ADR) | Dzmitry Varabei (via Claude)
+Создан открытый ADR `decisions/rs-app-agentic-rearchitecture.md` (`status: draft`) — рамка для разговора с контрибьюторами RS App (Максим Шилов, Андрей) о пересборке платформы под agentic-first модель. Триггер — обмен в community-чате в мае 2026 (Margaret про доступ через Claude Code; «агент = твой интерфейс»; Andrei про SystemUser как сущность для Agent Dementor). Документ позиционирует сдвиг: RS App был tool для проведения курсов, целевая модель — комьюнити-платформа, где курсы — одна из активностей. Источники аудита текущего состояния — `rolling-scopes/rsschool-app` (DOMAIN.md, AGENTS.md, GUIDELINES.md, 56 TypeORM-entities, NestJS API на /api/v2, GitHub OAuth + JWT без PAT, role `dementor` уже существует). Содержит: TL;DR из 5 пунктов, аудит текущего RS App, философию (community-first, профиль как сумма Contribution, агенты как first-class), ER-карту новых сущностей (Person/ExternalIdentity/Profile/Contribution/Endorsement/TrustSignal/MentoringLink/SystemActor/PersonalAgent/CourseAgent/CoreAgent/AccessToken/AgentRun/AccessGrant + консолидацию 12 task-сущностей в 4), API surface из трёх слоёв (OpenAPI/MCP/Context Packs), модель auth со scopes, четыре модели монетизации с trade-offs (платные курсы / marketplace / премиум-агенты / corporate sponsorship), эскиз миграции из 7 фаз без сроков, 10 open questions, явный scope-out. Related: `decisions/{score-philosophy-after-ai,mentor-as-defence-listener,short-track-via-framework-courses}.md`. Целевая дата принятия рамки — 2026-07-01. Index.md обновлён.
