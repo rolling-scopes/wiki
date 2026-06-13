@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RS App — Функциональные требования</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0a0a0b; --card:#141416; --line:#2a2a2e;
+    --ink:#ececee; --dim:#9a9aa2; --faint:#6a6a72;
+    --accent:#7c5cff; --ok:#37c978; --warn:#e8b339; --draft:#6a6a72; --concern:#3a9bdc;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,-apple-system,sans-serif;
+    font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:980px;margin:0 auto;padding:48px 24px 96px}
+  h1{font-family:'Playfair Display',Georgia,serif;font-weight:600;font-size:34px;margin:0 0 6px;letter-spacing:-.01em}
+  .sub{color:var(--dim);font-size:15px;margin:0 0 32px}
+  .sub b{color:var(--ink);font-weight:600}
+
+  .controls{position:sticky;top:0;background:linear-gradient(var(--bg) 70%,rgba(10,10,11,0));
+    padding:14px 0 18px;z-index:5;margin-bottom:8px}
+  .lbl{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--faint);margin:0 0 8px}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+  .chip{border:1px solid var(--line);background:var(--card);color:var(--dim);border-radius:999px;
+    padding:6px 14px;font-size:13px;font-weight:500;cursor:pointer;transition:.15s;user-select:none}
+  .chip:hover{border-color:#3c3c44;color:var(--ink)}
+  .chip.on{background:var(--accent);border-color:var(--accent);color:#fff}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px 24px;margin-bottom:14px}
+  .card-top{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+  .id{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;font-weight:600;color:var(--accent);
+    background:rgba(124,92,255,.12);border:1px solid rgba(124,92,255,.25);border-radius:7px;padding:3px 9px}
+  .tag{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--faint);
+    border:1px solid var(--line);border-radius:6px;padding:2px 8px}
+  .status{margin-left:auto;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px}
+  .dot{width:8px;height:8px;border-radius:50%}
+  .st-approved{color:var(--ok)} .st-approved .dot{background:var(--ok)}
+  .st-proposed{color:var(--warn)} .st-proposed .dot{background:var(--warn)}
+  .st-draft{color:var(--draft)} .st-draft .dot{background:var(--draft)}
+
+  .stmt{font-size:16px;font-weight:500;margin:0 0 12px;letter-spacing:-.005em}
+  .meta{font-size:13.5px;color:var(--dim);margin:0 0 6px}
+  .meta b{color:#c5c5cb;font-weight:600}
+  .roles{display:flex;flex-wrap:wrap;gap:6px;margin:14px 0 0}
+  .rl{font-size:12px;font-weight:500;border-radius:6px;padding:3px 9px;border:1px solid}
+  .rl.p{color:#b9a8ff;border-color:rgba(124,92,255,.3);background:rgba(124,92,255,.08)}
+  .rl.c{color:#9fd0f2;border-color:rgba(58,155,220,.3);background:rgba(58,155,220,.08)}
+
+  .appr{margin-top:16px;padding-top:14px;border-top:1px solid var(--line);font-size:13px}
+  .appr-row{display:flex;align-items:center;gap:8px;color:var(--dim);flex-wrap:wrap}
+  .who{color:var(--ok);font-weight:600}
+  .await{color:var(--warn)}
+  details{margin-top:10px}
+  summary{cursor:pointer;color:var(--faint);font-size:13px;list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary:hover{color:var(--dim)}
+  .why{color:var(--dim);font-size:13.5px;margin-top:8px;padding-left:12px;border-left:2px solid var(--line)}
+  .srcrow{margin-top:10px;padding-left:12px;font-size:12.5px;color:var(--faint)}
+  .srcrow a{color:var(--concern);text-decoration:none;border-bottom:1px solid rgba(58,155,220,.3)}
+  .srcrow a:hover{border-bottom-color:var(--concern)}
+  .note{color:var(--faint);font-size:12.5px;margin-top:40px;text-align:center}
+  .err{color:#e87a7a;background:rgba(232,122,122,.08);border:1px solid rgba(232,122,122,.3);
+    border-radius:12px;padding:18px 22px;font-size:14px}
+  .err code{font-family:ui-monospace,monospace;font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Функциональные требования RS App</h1>
+  <p class="sub">Фильтруй по своей роли — увидишь <b>только свои требования</b>. ▶ что роль делает · 👁 что роль касается / защищает. Раскрой «Почему такое требование» — там обоснование и ссылка на источник.</p>
+
+  <div class="controls">
+    <div class="lbl">Роль</div>
+    <div class="chips" id="roleChips"></div>
+    <div class="lbl">Домен</div>
+    <div class="chips" id="domChips"></div>
+  </div>
+
+  <div id="list"></div>
+</div>
+
+<script>
+let DATA=null, activeRole=null, activeDom=null;
+
+function md(s){return (s||'').replace(/\*\*(.+?)\*\*/g,'<b>$1</b>');}
+function rolesFor(fr){return [...new Set([...(fr.performs||[]),...(fr.concerns||[])])];}
+function rl(k){return (DATA.roles&&DATA.roles[k])||k;}
+function dl(k){return (DATA.domains&&DATA.domains[k])||k;}
+
+function renderChips(){
+  const rc=document.getElementById('roleChips');
+  rc.innerHTML='<span class="chip '+(!activeRole?'on':'')+'" data-r="">Все</span>'+
+    Object.keys(DATA.roles).map(k=>'<span class="chip '+(activeRole===k?'on':'')+'" data-r="'+k+'">'+DATA.roles[k]+'</span>').join('');
+  const dc=document.getElementById('domChips');
+  dc.innerHTML='<span class="chip '+(!activeDom?'on':'')+'" data-d="">Все</span>'+
+    Object.keys(DATA.domains).map(k=>'<span class="chip '+(activeDom===k?'on':'')+'" data-d="'+k+'">'+DATA.domains[k]+'</span>').join('');
+  rc.querySelectorAll('[data-r]').forEach(c=>c.onclick=()=>{activeRole=c.dataset.r||null;render();});
+  dc.querySelectorAll('[data-d]').forEach(c=>c.onclick=()=>{activeDom=c.dataset.d||null;render();});
+}
+
+function srcRow(fr){
+  if(!fr.source||!fr.source.length)return '';
+  return '<div class="srcrow">Источник: '+fr.source.map(s=>s.url?'<a href="'+s.url+'" target="_blank" rel="noopener">'+s.label+' ↗</a>':s.label).join(' · ')+'</div>';
+}
+
+function apprBlock(fr){
+  const need=rolesFor(fr).map(rl);
+  if(fr.status==='approved'){
+    const a=(fr.approvals||[]).map(x=>'<span class="who">'+x.by+'</span> ('+rl(x.role)+', v'+x.version+', '+x.at+')').join(', ');
+    return '<div class="appr"><div class="appr-row">✅ Одобрено: '+a+'</div></div>';
+  }
+  const got=(fr.approvals||[]).map(x=>x.by).join(', ');
+  return '<div class="appr"><div class="appr-row">'+
+    (got?'Частично одобрено: <span class="who">'+got+'</span> · ':'')+
+    '<span class="await">Ждёт одобрения от: '+(need.length?need.join(' · '):'—')+'</span></div></div>';
+}
+
+function statusLabel(s){return s==='approved'?'Одобрено':s==='proposed'?'Предложено':'Черновик';}
+
+function card(fr){
+  const p=(fr.performs||[]).map(r=>'<span class="rl p">▶ '+rl(r)+'</span>').join('');
+  const c=(fr.concerns||[]).map(r=>'<span class="rl c">👁 '+rl(r)+'</span>').join('');
+  return '<div class="card">'+
+    '<div class="card-top"><span class="id">'+fr.id+'</span>'+
+      '<span class="tag">'+fr.tag+'</span>'+
+      '<span class="tag">'+dl(fr.domain)+'</span>'+
+      '<span class="status st-'+fr.status+'"><span class="dot"></span>'+statusLabel(fr.status)+' · v'+fr.version+'</span>'+
+    '</div>'+
+    '<p class="stmt">'+md(fr.statement)+'</p>'+
+    (fr.acceptance?'<p class="meta"><b>Как проверить:</b> '+md(fr.acceptance)+'</p>':'')+
+    '<div class="roles">'+p+c+'</div>'+
+    '<details><summary>Почему такое требование</summary><div class="why">'+md(fr.rationale)+'</div>'+srcRow(fr)+'</details>'+
+    apprBlock(fr)+
+  '</div>';
+}
+
+function render(){
+  renderChips();
+  const list=DATA.frs.filter(fr=>(!activeRole||rolesFor(fr).includes(activeRole))&&(!activeDom||fr.domain===activeDom));
+  const n=list.length;
+  document.getElementById('list').innerHTML=
+    '<div class="lbl" style="margin:6px 0 14px">'+n+' требовани'+(n===1?'е':(n%10>=2&&n%10<=4&&(n<10||n>20)?'я':'й'))+
+    (activeRole?' для роли «'+rl(activeRole)+'»':'')+'</div>'+
+    list.map(card).join('');
+}
+
+fetch('./fr.json')
+  .then(r=>{if(!r.ok)throw new Error(r.status);return r.json();})
+  .then(d=>{DATA=d;render();})
+  .catch(e=>{
+    document.getElementById('list').innerHTML='<div class="err">Не удалось загрузить <code>fr.json</code> ('+e.message+
+    '). При локальном открытии через <code>file://</code> браузер блокирует fetch — открой через локальный сервер '+
+    '(<code>python3 -m http.server</code> в этой папке) или смотри на задеплоенной gh-pages.</div>';
+  });
+</script>
+</body>
+</html>
