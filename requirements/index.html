@@ -65,6 +65,39 @@
   .err{color:#e87a7a;background:rgba(232,122,122,.08);border:1px solid rgba(232,122,122,.3);
     border-radius:12px;padding:18px 22px;font-size:14px}
   .err code{font-family:ui-monospace,monospace;font-size:13px}
+
+  /* e2e timeline (swimlane: фазы × роли) */
+  .tl-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .tl{display:grid;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:14px;
+    overflow:hidden;min-width:760px}
+  .tl-h{background:rgba(255,255,255,.04);padding:11px 12px;font-size:11px;text-transform:uppercase;
+    letter-spacing:.06em;color:var(--dim);font-weight:700;display:flex;align-items:center}
+  .tl-h.corner{background:rgba(255,255,255,.015)}
+  .tl-pl{background:rgba(124,92,255,.05);padding:12px;display:flex;flex-direction:column;gap:3px;justify-content:center}
+  .tl-pn{font-family:ui-monospace,monospace;font-size:11px;font-weight:700;color:var(--accent)}
+  .tl-pt{font-size:13px;font-weight:600;line-height:1.25}
+  .tl-cell{background:var(--card);padding:9px 10px;min-height:46px}
+  .frchip{display:inline-block;font-family:ui-monospace,monospace;font-size:11px;font-weight:600;
+    color:#b9a8ff;background:rgba(124,92,255,.1);border:1px solid rgba(124,92,255,.25);border-radius:6px;
+    padding:2px 6px;margin:2px 3px 2px 0;cursor:pointer;white-space:nowrap}
+  .frchip:hover{border-color:var(--accent);color:#fff;background:rgba(124,92,255,.2)}
+  .frchip.st-draft{color:#c6c6d0;background:rgba(154,154,162,.12);border-color:rgba(154,154,162,.35)}
+  .frchip.st-draft:hover{border-color:#9a9aa2;color:#fff;background:rgba(154,154,162,.22)}
+
+  /* FR detail overlay (клик по чипу) */
+  .ov{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;
+    justify-content:center;padding:24px;z-index:50}
+  .ov-card{background:var(--card);border:1px solid var(--line);border-radius:16px;max-width:560px;
+    width:100%;max-height:85vh;overflow:auto;padding:24px 26px}
+  .ov-x{float:right;cursor:pointer;color:var(--faint);font-size:22px;line-height:1;border:none;background:none}
+  .ov-x:hover{color:var(--ink)}
+  .tl-empty{color:var(--faint);font-size:18px;opacity:.5}
+  .tl-cross{margin-top:20px;border:1px dashed var(--line);border-radius:14px;padding:18px 20px;background:rgba(255,255,255,.015)}
+  .tl-cross h3{margin:0 0 4px;font-size:16px}
+  .tl-cross .sub{margin:0 0 14px;font-size:13px}
+  .tl-crossrow{display:flex;gap:10px;align-items:baseline;margin-bottom:8px;flex-wrap:wrap}
+  .tl-crossrole{font-size:12px;font-weight:600;color:var(--dim);min-width:96px}
+  .tl-legend{color:var(--faint);font-size:12.5px;margin:14px 0 18px}
 </style>
 </head>
 <body>
@@ -73,22 +106,35 @@
   <p class="sub">Фильтруй по своей роли — увидишь <b>только свои требования</b>. ▶ что роль делает · 👁 что роль касается / защищает. Раскрой «Почему такое требование» — там обоснование и ссылка на источник.</p>
 
   <div class="controls">
-    <div class="lbl">Роль</div>
-    <div class="chips" id="roleChips"></div>
-    <div class="lbl">Домен</div>
-    <div class="chips" id="domChips"></div>
+    <div class="lbl">Вид</div>
+    <div class="chips" id="viewChips"></div>
+    <div id="domControls">
+      <div class="lbl">Роль</div>
+      <div class="chips" id="roleChips"></div>
+      <div class="lbl">Домен</div>
+      <div class="chips" id="domChips"></div>
+    </div>
   </div>
 
   <div id="list"></div>
 </div>
 
 <script>
-let DATA=null, activeRole=null, activeDom=null;
+let DATA=null, activeRole=null, activeDom=null, view='domains';
 
 function md(s){return (s||'').replace(/\*\*(.+?)\*\*/g,'<b>$1</b>');}
+function esc(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function rolesFor(fr){return [...new Set([...(fr.performs||[]),...(fr.concerns||[])])];}
 function rl(k){return (DATA.roles&&DATA.roles[k])||k;}
 function dl(k){return (DATA.domains&&DATA.domains[k])||k;}
+
+function renderViewChips(){
+  const vc=document.getElementById('viewChips');
+  const views=[['domains','По доменам'],['timeline','Таймлайн e2e'],['principles','Принципы']];
+  vc.innerHTML=views.map(([k,l])=>'<span class="chip '+(view===k?'on':'')+'" data-v="'+k+'">'+l+'</span>').join('');
+  vc.querySelectorAll('[data-v]').forEach(c=>c.onclick=()=>{view=c.dataset.v;render();});
+  document.getElementById('domControls').style.display = view==='domains' ? '' : 'none';
+}
 
 function renderChips(){
   const rc=document.getElementById('roleChips');
@@ -137,7 +183,90 @@ function card(fr){
   '</div>';
 }
 
+function frChip(fr){
+  return '<span class="frchip st-'+fr.status+'" data-id="'+fr.id+'" title="'+esc(fr.statement)+' (клик — детали)">'+fr.id+'</span>';
+}
+
+function closeOv(){const o=document.getElementById('ov');if(o)o.remove();}
+function showFr(id){
+  const fr=DATA.frs.find(f=>f.id===id); if(!fr)return;
+  closeOv();
+  const ov=document.createElement('div'); ov.className='ov'; ov.id='ov';
+  ov.innerHTML='<div class="ov-card"><button class="ov-x" aria-label="Закрыть">&times;</button>'+card(fr)+'</div>';
+  ov.onclick=e=>{if(e.target===ov||e.target.classList.contains('ov-x'))closeOv();};
+  document.body.appendChild(ov);
+}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeOv();});
+document.addEventListener('click',e=>{const c=e.target.closest('.frchip');if(c&&c.dataset.id)showFr(c.dataset.id);});
+
+function renderTimeline(){
+  const phases=(DATA.meta&&DATA.meta.phases)||[];
+  // columns = роли, которые хоть где-то ВЫПОЛНЯЮТ фазовое требование, в порядке DATA.roles
+  const performerRoles=Object.keys(DATA.roles).filter(r=>
+    DATA.frs.some(fr=>!fr.crossCutting&&(fr.performs||[]).includes(r)));
+  const cols=performerRoles.length;
+  const tpl='grid-template-columns:140px repeat('+cols+',minmax(0,1fr))';
+
+  let cells='<div class="tl-h corner"></div>'+
+    performerRoles.map(r=>'<div class="tl-h">'+rl(r)+'</div>').join('');
+
+  for(const ph of phases){
+    cells+='<div class="tl-pl"><span class="tl-pn">Фаза '+ph.n+'</span><span class="tl-pt">'+ph.label+'</span></div>';
+    for(const r of performerRoles){
+      const frs=DATA.frs.filter(fr=>(fr.phase||[]).includes(ph.n)&&(fr.performs||[]).includes(r));
+      cells+='<div class="tl-cell">'+(frs.length?frs.map(frChip).join(''):'<span class="tl-empty">·</span>')+'</div>';
+    }
+  }
+
+  // сквозные требования (инварианты/возможности вне одной фазы), сгруппированы по выполняющей роли
+  const cross=DATA.frs.filter(fr=>fr.crossCutting);
+  let crossHtml='';
+  if(cross.length){
+    const byRole={};
+    cross.forEach(fr=>(fr.performs||['—']).forEach(r=>{(byRole[r]=byRole[r]||[]).push(fr);}));
+    crossHtml='<div class="tl-cross"><h3>Сквозные требования</h3>'+
+      '<p class="sub">Инварианты и возможности, которые держатся <b>во всех фазах</b>, а не в одном шаге — честность, профиль, коммуникация, identity агентов.</p>'+
+      Object.keys(byRole).map(r=>'<div class="tl-crossrow"><span class="tl-crossrole">'+rl(r)+'</span><span>'+
+        byRole[r].map(frChip).join('')+'</span></div>').join('')+'</div>';
+  }
+
+  const phased=DATA.frs.filter(fr=>!fr.crossCutting).length;
+  document.getElementById('list').innerHTML=
+    '<p class="tl-legend">Курс по времени: строки — фазы 0–9, колонки — роль, которая <b>действует</b>. '+
+    phased+' фазовых требований · '+cross.length+' сквозных. '+
+    '<b>Клик по чипу</b> — детали требования. Цвет = статус: '+
+    '<span class="frchip" style="cursor:default">фиолетовый</span> предложено/одобрено · '+
+    '<span class="frchip st-draft" style="cursor:default">серый</span> черновик (ждёт одобрения).</p>'+
+    '<div class="tl-scroll"><div class="tl" style="'+tpl+'">'+cells+'</div></div>'+crossHtml;
+}
+
+function invCard(iv){
+  const gov=(iv.governs||[]).map(id=>{const fr=DATA.frs.find(f=>f.id===id);
+    return fr?frChip(fr):'<span class="frchip" style="cursor:default">'+id+'</span>';}).join('');
+  return '<div class="card">'+
+    '<div class="card-top"><span class="id">'+iv.id+'</span>'+
+      '<span class="tag">'+iv.tag+'</span>'+
+      '<span class="tag">Инвариант</span>'+
+      '<span class="status st-'+iv.status+'"><span class="dot"></span>'+statusLabel(iv.status)+'</span>'+
+    '</div>'+
+    '<p class="stmt">'+md(iv.statement)+'</p>'+
+    (iv.rationale?'<details><summary>Почему такой принцип</summary><div class="why">'+md(iv.rationale)+'</div>'+srcRow(iv)+'</details>':'')+
+    (gov?'<p class="meta" style="margin-top:14px"><b>Держит требования:</b></p><div class="roles">'+gov+'</div>':'')+
+  '</div>';
+}
+
+function renderPrinciples(){
+  const list=DATA.invariants||[];
+  document.getElementById('list').innerHTML=
+    '<p class="tl-legend">Инварианты — что система держит <b>всегда</b>, поверх отдельных требований. '+
+    list.length+' принципов. Клик по чипу требования (<b>Держит требования</b>) — детали FR.</p>'+
+    list.map(invCard).join('');
+}
+
 function render(){
+  renderViewChips();
+  if(view==='timeline'){renderTimeline();return;}
+  if(view==='principles'){renderPrinciples();return;}
   renderChips();
   const list=DATA.frs.filter(fr=>(!activeRole||rolesFor(fr).includes(activeRole))&&(!activeDom||fr.domain===activeDom));
   const n=list.length;
