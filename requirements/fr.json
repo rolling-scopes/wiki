@@ -205,6 +205,58 @@
       "crossCutting": false
     },
     {
+      "id": "FR-CRS-6",
+      "domain": "CRS",
+      "tag": "NEW",
+      "statement": "Координатор может разложить календарь когорты (FR-CRS-1) на набор датированных событий (дедлайны, защиты, слоты, финал, закрытие); каждое событие несёт пер-событийные напоминания.",
+      "rationale": "intake Q17 — календарь FR-CRS-1 был как набор дат, но не как события с напоминаниями; нужен явный слой «расписание = события».",
+      "acceptance": "у когорты есть события с датой и типом; напоминание порождается из события через FR-COM-1, не вручную; студент/ментор видят расписание своей когорты.",
+      "source": [
+        {
+          "label": "intake раунд 2 (Q17)"
+        }
+      ],
+      "performs": [
+        "coordinator"
+      ],
+      "concerns": [
+        "student",
+        "mentor"
+      ],
+      "version": 1,
+      "status": "draft",
+      "approvals": [],
+      "phase": [
+        0
+      ],
+      "crossCutting": false
+    },
+    {
+      "id": "FR-CRS-7",
+      "domain": "CRS",
+      "tag": "NEW",
+      "statement": "Координатор может изменить событие расписания (сдвиг даты, добавление); система фиксирует было/стало/причину и уведомляет затронутый scope (cohort/team/person).",
+      "rationale": "intake Q17 — поток изменения расписания (что/когда/кому) не был смоделирован; сужающие сдвиги ограничены инвариантом заморозки.",
+      "acceptance": "изменение оставляет аудит было/стало/причина; уведомление адресовано по scope; сужающий сдвиг (раньше дедлайн) отклоняется (FR-FAIR-2, FR-CRD-2).",
+      "source": [
+        {
+          "label": "intake раунд 2 (Q17)"
+        }
+      ],
+      "performs": [
+        "coordinator"
+      ],
+      "concerns": [
+        "student",
+        "mentor"
+      ],
+      "version": 1,
+      "status": "draft",
+      "approvals": [],
+      "phase": [],
+      "crossCutting": true
+    },
+    {
       "id": "FR-ENR-0",
       "domain": "ENR",
       "tag": "NEW",
@@ -1208,6 +1260,61 @@
       "crossCutting": false
     },
     {
+      "id": "FR-DEF-8",
+      "domain": "DEF",
+      "tag": "NEW",
+      "statement": "Координатор может собрать панель жюри (JuryPanel, 3–6 человек) на финальные/командные защиты, с типизированными ролями участников.",
+      "rationale": "intake Q19 — FR-DEF-5 даёт jury-защиту, но состав панели как сущность (3–6, роли) не моделировался.",
+      "acceptance": "панель имеет состав 3–6; участник — typed role (jury/listener); reviewer ≠ primary-ментор защищающейся команды (ср. FR-MEN-8).",
+      "source": [
+        {
+          "label": "intake раунд 2 (Q19)"
+        }
+      ],
+      "performs": [
+        "coordinator"
+      ],
+      "concerns": [
+        "jury",
+        "student"
+      ],
+      "version": 1,
+      "status": "draft",
+      "approvals": [],
+      "phase": [
+        7
+      ],
+      "crossCutting": false
+    },
+    {
+      "id": "FR-DEF-9",
+      "domain": "DEF",
+      "tag": "NEW",
+      "statement": "Координатор (или агент-планировщик) может создать слот защиты (DefenceSlot) с временем и длительностью (напр. 90/120 мин) и назначить на него несколько команд; слот привязан к панели жюри или ревьюеру.",
+      "rationale": "intake Q19 — слот-расписание защит (длительность, несколько команд в слоте, назначение команд) не моделировалось.",
+      "acceptance": "слот имеет время/длительность и ≥1 команду; команда видит свой слот и панель/ревьюера (FR-COM-4); для одной команды слоты не пересекаются.",
+      "source": [
+        {
+          "label": "intake раунд 2 (Q19)"
+        }
+      ],
+      "performs": [
+        "coordinator"
+      ],
+      "concerns": [
+        "student",
+        "jury",
+        "mentor"
+      ],
+      "version": 1,
+      "status": "draft",
+      "approvals": [],
+      "phase": [
+        7
+      ],
+      "crossCutting": false
+    },
+    {
       "id": "FR-SCO-1",
       "domain": "SCO",
       "tag": "Tandem",
@@ -1762,6 +1869,32 @@
       "approvals": [],
       "phase": [],
       "crossCutting": true
+    },
+    {
+      "id": "FR-AGT-8",
+      "domain": "AGT",
+      "tag": "NEW",
+      "statement": "Координатор может зарегистрировать агента-планировщика (CourseAgent со scope расписания), который строит/предлагает расписание защит и назначение команд на слоты; не ставит баллы и финализирует в рамках scope или с approve координатора.",
+      "rationale": "intake Q19 — «хорошо бы это мог делать AI-агент (Claude Code)»: планировщик как CourseAgent со scope расписания.",
+      "acceptance": "scope агента ограничен расписанием когорты (FR-CRD-5); попытка write:score отклоняется (как FR-AGT-2); предложенное расписание применяется по правилам scope.",
+      "source": [
+        {
+          "label": "intake раунд 2 (Q19)"
+        }
+      ],
+      "performs": [
+        "agent"
+      ],
+      "concerns": [
+        "coordinator"
+      ],
+      "version": 1,
+      "status": "draft",
+      "approvals": [],
+      "phase": [
+        7
+      ],
+      "crossCutting": false
     },
     {
       "id": "FR-COM-1",
