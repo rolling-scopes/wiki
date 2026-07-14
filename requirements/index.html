@@ -98,12 +98,40 @@
   .tl-crossrow{display:flex;gap:10px;align-items:baseline;margin-bottom:8px;flex-wrap:wrap}
   .tl-crossrole{font-size:12px;font-weight:600;color:var(--dim);min-width:96px}
   .tl-legend{color:var(--faint);font-size:12.5px;margin:14px 0 18px}
+
+  .intro{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px 24px;margin:0 0 26px}
+  .intro p{margin:0 0 11px;color:var(--dim);font-size:14px}
+  .intro p:last-of-type{margin-bottom:0}
+  .intro b{color:var(--ink);font-weight:600}
+  .intro .links{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
+  .intro .links a{font-size:13px;font-weight:600;color:var(--accent);text-decoration:none;
+    border:1px solid rgba(124,92,255,.3);background:rgba(124,92,255,.08);border-radius:8px;padding:7px 13px;transition:.15s}
+  .intro .links a:hover{background:rgba(124,92,255,.16);border-color:var(--accent)}
+
+  .ovw-h{font-family:'Playfair Display',Georgia,serif;font-weight:600;font-size:20px;margin:0 0 12px}
+  .ovw-p{color:var(--dim);font-size:14.5px;line-height:1.65;margin:0}
+  .ovw-phase{padding:11px 0;border-top:1px solid var(--line)}
+  .ovw-phase:first-of-type{border-top:none;padding-top:0}
+  .ovw-phase b{font-size:15px;color:var(--ink)}
+  .ovw-pd{color:var(--dim);font-size:13.5px;margin-top:4px;line-height:1.5}
+  .ovw-ul{margin:0;padding-left:20px;color:var(--dim);font-size:14px}
+  .ovw-ul li{margin-bottom:9px;line-height:1.5}
+  .ovw-ref{font-family:ui-monospace,monospace;font-size:11.5px;color:var(--faint)}
 </style>
 </head>
 <body>
 <div class="wrap">
   <h1>Функциональные требования RS App</h1>
-  <p class="sub">Фильтруй по своей роли — увидишь <b>только свои требования</b>. ▶ что роль делает · 👁 что роль касается / защищает. Раскрой «Почему такое требование» — там обоснование и ссылка на источник.</p>
+  <div class="intro">
+    <p><b>RS App пересобирается в agentic-first комьюнити-платформу</b> — где курсы это одна из активностей, а агенты (личные, курса, core) — полноправные акторы наравне с людьми. Здесь — <b>функциональные требования</b>: что система должна делать, роль за ролью, от набора до закрытия когорты. Грунт — как мы провели RS Tandem 2026.</p>
+    <p><b>Как читать.</b> <b>По доменам</b> — требования по темам; отфильтруй по своей роли (▶ что роль делает · 👁 чего касается). <b>Таймлайн e2e</b> — те же требования, разложенные по фазам курса 0–9. <b>Принципы</b> — инварианты, которые система держит всегда.</p>
+    <p><b>Как участвовать.</b> У каждого требования есть статус: <span class="frchip" style="cursor:default">предложено/одобрено</span> или <span class="frchip st-draft" style="cursor:default">черновик</span> — черновик ждёт вашего ревью. Клик по требованию — детали и источник. Одобрение и правки — через PR в этот репозиторий.</p>
+    <div class="links">
+      <a href="https://github.com/rolling-scopes/tandi/blob/main/docs/rs-app-design/platform-vision.md" target="_blank" rel="noopener">Зачем это всё ↗</a>
+      <a href="https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/rs-app-agentic-rearchitecture.md" target="_blank" rel="noopener">Архитектура · ADR ↗</a>
+      <a href="https://github.com/rolling-scopes/tandi/blob/main/docs/rs-app-design/tenancy-decision-brief.md" target="_blank" rel="noopener">Открытое решение · tenancy ↗</a>
+    </div>
+  </div>
 
   <div class="controls">
     <div class="lbl">Вид</div>
@@ -130,7 +158,7 @@ function dl(k){return (DATA.domains&&DATA.domains[k])||k;}
 
 function renderViewChips(){
   const vc=document.getElementById('viewChips');
-  const views=[['domains','По доменам'],['timeline','Таймлайн e2e'],['principles','Принципы']];
+  const views=[['domains','По доменам'],['timeline','Таймлайн e2e'],['principles','Принципы'],['overview','Обзор']];
   vc.innerHTML=views.map(([k,l])=>'<span class="chip '+(view===k?'on':'')+'" data-v="'+k+'">'+l+'</span>').join('');
   vc.querySelectorAll('[data-v]').forEach(c=>c.onclick=()=>{view=c.dataset.v;render();});
   document.getElementById('domControls').style.display = view==='domains' ? '' : 'none';
@@ -263,10 +291,24 @@ function renderPrinciples(){
     list.map(invCard).join('');
 }
 
+function renderOverview(){
+  const m=DATA.meta||{};
+  const phases=(m.phases||[]).map(p=>'<div class="ovw-phase"><span class="tl-pn">Фаза '+p.n+'</span> <b>'+p.label+'</b>'+
+    (p.desc?'<div class="ovw-pd">'+md(p.desc)+'</div>':'')+'</div>').join('');
+  const ng=(m.nonGoals||[]).map(x=>'<li>'+md(x)+'</li>').join('');
+  const oq=(m.openQuestions||[]).map(x=>'<li>'+md(x.q)+(x.refs?' <span class="ovw-ref">'+x.refs+'</span>':'')+'</li>').join('');
+  document.getElementById('list').innerHTML=
+    (m.about?'<div class="card"><h2 class="ovw-h">Анатомия курса</h2><p class="ovw-p">'+md(m.about)+'</p></div>':'')+
+    (phases?'<div class="card"><h2 class="ovw-h">E2E жизненный цикл · фазы 0–9</h2>'+phases+'</div>':'')+
+    (ng?'<div class="card"><h2 class="ovw-h">Не-цели (вне этого слоя)</h2><ul class="ovw-ul">'+ng+'</ul></div>':'')+
+    (oq?'<div class="card"><h2 class="ovw-h">Открытые вопросы</h2><ul class="ovw-ul">'+oq+'</ul></div>':'');
+}
+
 function render(){
   renderViewChips();
   if(view==='timeline'){renderTimeline();return;}
   if(view==='principles'){renderPrinciples();return;}
+  if(view==='overview'){renderOverview();return;}
   renderChips();
   const list=DATA.frs.filter(fr=>(!activeRole||rolesFor(fr).includes(activeRole))&&(!activeDom||fr.domain===activeDom));
   const n=list.length;
