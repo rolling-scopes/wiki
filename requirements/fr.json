@@ -1,2454 +1,2737 @@
 {
-  "meta": {
-    "updated": "2026-07-14",
-    "wikiBase": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/",
-    "phases": [
-      {
-        "n": 0,
-        "label": "Проектирование курса",
-        "desc": "Координатор создаёт Course-шаблон, заводит Cohort, задаёт календарь, этапы, правила, feature-флаги, готовит kickoff (5 секций). Core team назначает координатора."
-      },
-      {
-        "n": 1,
-        "label": "Набор и комплектация",
-        "desc": "Менторы: набор в пул до kickoff, онбординг, резерв ≥2. Студенты: самозапись/зачисление, waitlist при capacity. Команды формируются (по политике сборки), привязываются менторы. Staffing-gate «команд без ментора = 0»."
-      },
-      {
-        "n": 2,
-        "label": "Kickoff и заморозка",
-        "desc": "Публикуется kickoff. С момента старта когорты 5 секций read-only; изменения — только в пользу студента и только публично."
-      },
-      {
-        "n": 3,
-        "label": "Учебные недели",
-        "desc": "Студент делает задания и ведёт дневник. PR-ревью делает кодинг-агент, не ментор. Ментор раз в 1–2 недели слушает понимание. Детерминированный сбор баллов. Dementor дёргает неактивных."
-      },
-      {
-        "n": 4,
-        "label": "Командный warm-up",
-        "desc": "Отдельный процессный таск: GitHub Flow, PR-flow, созвоны, распределение. Балл символический — команда учится работать вместе до финала."
-      },
-      {
-        "n": 5,
-        "label": "Финальный проект",
-        "desc": "Команда делает финал по зафиксированному scope (без scope-creep). README с артефактами + рабочий деплой + демо-видео."
-      },
-      {
-        "n": 6,
-        "label": "Peer-review",
-        "desc": "Один раунд peer-review (студент↔студент) до финальной защиты, зазор 3–7 дней — репетиция."
-      },
-      {
-        "n": 7,
-        "label": "Финальные защиты",
-        "desc": "Self-assessment студента. Менторская защита как стресс-тест понимания. Командная защита перед jury (опц.) + cross-mentor ротация."
-      },
-      {
-        "n": 8,
-        "label": "Подведение итогов",
-        "desc": "Скоринг (детерминированные правила + LLM-upgrade дневника). Сертификация по зафиксированным критериям. Awards (опц.). Экспорт баллов во внешний учёт."
-      },
-      {
-        "n": 9,
-        "label": "Закрытие когорты",
-        "desc": "Cohort закрывается. Contribution остаются навсегда; MentoringLink/AccessGrant истекают."
-      }
-    ],
-    "about": "Курс в новой модели — не монолит, а **шаблон + запуск + содержимое**. **Course** (шаблон): дисциплина/стек, программа этапов и заданий, базовый формат защит, шаблон kickoff. **Cohort** (запуск): календарь, координатор(ы) и команда курса, набор участников, зафиксированный свод правил, feature-флаги. **Stage** (этап/чекпоинт): окно дат, scope, набор правил с баллами, опциональный gate. **Task** (задание): дедлайн, тип проверяющего, баллы. **Team**: студенты + репозиторий + лид + ментор(ы). **DefenceSession**: любой формат защиты. Итог: Course → Cohort → Stages → Tasks/Defences, поверх — люди в ролях и команды, на выходе — сертификат + вклад в профиль.",
-    "nonGoals": [
-      "Поля сущностей, DTO, миграции, схема БД — в ADR / на этапе implementation.",
-      "Auth-механика и формат scope-строк — ADR §6.",
-      "Решение по монетизации — ADR §7.",
-      "UI/экраны как дизайн — функционал описан как поведение (но принцип «каждой роли UI + MCP» — INV-12).",
-      "Выбор LLM-провайдеров — per-actor, ADR §10.",
-      "Конкретные пороги («коммерческий опыт уровня X», «достаточное понимание») — калибровка координатора."
-    ],
-    "openQuestions": [
-      {
-        "q": "Self-driven vs default: как гарантировать, что self-driven — выбор команды, а не следствие нехватки менторов?",
-        "refs": "FR-MEN-4, FR-MEN-6"
-      },
-      {
-        "q": "Что считать «достаточным пониманием» на защите — единого порога нет. Нужен ли минимальный rubric?",
-        "refs": "FR-MEN-7"
-      },
-      {
-        "q": "Какой кодинг-агент проверяет PR и кто его держит.",
-        "refs": "FR-DEF-1, FR-AGT-4"
-      },
-      {
-        "q": "Что делать, если команда не прошла warm-up.",
-        "refs": "FR-DEF-7"
-      },
-      {
-        "q": "Cross-course градация (Junior/Mid/Senior).",
-        "refs": "FR-PRO-4, ADR §9"
-      },
-      {
-        "q": "Публичность по умолчанию профиля и Contribution-feed.",
-        "refs": "FR-PRO, ADR §9"
-      },
-      {
-        "q": "GDPR-удаление Person vs immutable Contribution — политика soft/anon/hard + фрикция.",
-        "refs": "FR-PRO-2, ADR §9"
-      },
-      {
-        "q": "Регулярные командные таски через весь курс (не только warm-up).",
-        "refs": "FR-DEF-7"
-      },
-      {
-        "q": "Роль баллов после AI — TrustSignal vs score.",
-        "refs": "FR-SCO-6"
-      },
-      {
-        "q": "Tenancy: общая мульти-тенант платформа vs изоляция per-course (БД/инфра/расширяемость). Гейтит publishing-scale и «свой тип проверки».",
-        "refs": "tenancy-decision-brief.md, ADR §3.2"
-      }
-    ]
-  },
-  "roles": {
-    "coordinator": "Координатор",
-    "mentor": "Ментор",
-    "student": "Студент",
-    "agent": "Агент",
-    "jury": "Жюри",
-    "core": "Core team",
-    "hirer": "Работодатель"
-  },
-  "domains": {
-    "CRS": "Курс и набор",
-    "ENR": "Зачисление",
-    "MEN": "Менторинг",
-    "STU": "Студент",
-    "DEF": "Защиты",
-    "SCO": "Скоринг",
-    "CRD": "Координация",
-    "AGT": "Агенты",
-    "COM": "Коммуникация",
-    "PRO": "Профиль",
-    "FAIR": "Честность"
-  },
-  "frs": [
-    {
-      "id": "FR-CRS-1",
-      "domain": "CRS",
-      "tag": "Tandem",
-      "statement": "Координатор может создать набор из шаблона курса, задав календарь (даты старта, дедлайнов, защит, финала, закрытия).",
-      "rationale": "program-config. Сейчас Course смешивает шаблон и instance — ADR §3.2 требует разделить.",
-      "acceptance": "созданный набор имеет независимый календарь, не мутирующий шаблон.",
-      "source": [
-        {
-          "label": "Tandem: program-config"
-        },
-        {
-          "label": "ADR",
-          "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/rs-app-agentic-rearchitecture.md"
-        }
-      ],
-      "performs": [
-        "coordinator"
-      ],
-      "concerns": [
-        "student"
-      ],
-      "version": 1,
-      "status": "proposed",
-      "approvals": [],
-      "phase": [
-        0
-      ],
-      "crossCutting": false
-    },
-    {
-      "id": "FR-CRS-2",
-      "domain": "CRS",
-      "tag": "Tandem",
-      "statement": "Координатор может определить этапы набора, каждый со scope, окном дат, набором правил (тип/scope/баллы/params) и опциональным gate.",
-      "rationale": "Tandem: 7 чекпоинтов с типизированными rules.",
-      "acceptance": "этап с gate без баллов блокирует грейдинг, если gate не пройден (w6).",
-      "source": [
-        {
-          "label": "Tandem: 7 чекпоинтов"
-        }
-      ],
-      "performs": [
-        "coordinator"
-      ],
-      "concerns": [
-        "student"
-      ],
-      "version": 1,
-      "status": "proposed",
-      "approvals": [],
-      "phase": [
-        0
-      ],
-      "crossCutting": false
-    },
-    {
-      "id": "FR-CRS-3",
-      "domain": "CRS",
-      "tag": "Tandem",
-      "statement": "Координатор может включать/выключать модули набора через feature-флаги (teamDefence, mentorDefence, peerReview, diaryGrade, selfAssessment, awards).",
-      "rationale": "Tandem: program-config.features.",
-      "acceptance": "выключенный модуль не появляется ни в UI, ни в API-контексте студента.",
-      "source": [
-        {
-          "label": "Tandem: program-config.features"
-        }
-      ],
-      "performs": [
-        "coordinator"
-      ],
-      "concerns": [
-        "student"
-      ],
-      "version": 1,
-      "status": "proposed",
-      "approvals": [],
-      "phase": [
-        0
-      ],
-      "crossCutting": false
-    },
-    {
-      "id": "FR-CRS-4",
-      "domain": "CRS",
-      "tag": "Tandem",
-      "statement": "Система поддерживает разные типы правил оценивания и допускает `custom` без баллов как чек-маркер.",
-      "rationale": "Tandem.",
-      "acceptance": "новый тип правила добавляется конфигом, без правки ядра скоринга для существующих.",
-      "source": [
-        {
-          "label": "Tandem"
-        }
-      ],
-      "performs": [
-        "coordinator"
-      ],
-      "concerns": [
-        "student",
-        "agent"
-      ],
-      "version": 1,
-      "status": "proposed",
-      "approvals": [],
-      "phase": [
-        0
-      ],
-      "crossCutting": false
-    },
-    {
-      "id": "FR-CRS-5",
-      "domain": "CRS",
-      "tag": "NEW",
-      "statement": "Курс может быть индивидуальным (без командного финала) — тогда team/warm-up/jury-фазы не активируются.",
-      "rationale": "team-warmup §«когда не нужен».",
-      "acceptance": "индивидуальный набор проходит e2e без обязательной Team-сущности.",
-      "source": [
-        {
-          "label": "team-warmup-before-final",
-          "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/team-warmup-before-final.md"
-        }
-      ],
-      "performs": [
-        "coordinator"
-      ],
-      "concerns": [
-        "student"
-      ],
-      "version": 1,
-      "status": "draft",
-      "approvals": [],
-      "phase": [
-        0
-      ],
-      "crossCutting": false
-    },
-    {
-      "id": "FR-CRS-6",
-      "domain": "CRS",
-      "tag": "NEW",
-      "statement": "Координатор может разложить календарь когорты (FR-CRS-1) на набор датированных событий (дедлайны, защиты, слоты, финал, закрытие); каждое событие несёт пер-событийные напоминания.",
-      "rationale": "intake Q17 — календарь FR-CRS-1 был как набор дат, но не как события с напоминаниями; нужен явный слой «расписание = события».",
-      "acceptance": "у когорты есть события с датой и типом; напоминание порождается из события через FR-COM-1, не вручную; студент/ментор видят расписание своей когорты.",
-      "source": [
-        {
-          "label": "intake раунд 2 (Q17)"
-        }
-      ],
-      "performs": [
-        "coordinator"
-      ],
-      "concerns": [
-        "student",
-        "mentor"
-      ],
-      "version": 1,
-      "status": "draft",
-      "approvals": [],
-      "phase": [
-        0
-      ],
-      "crossCutting": false
-    },
-    {
-      "id": "FR-CRS-7",
-      "domain": "CRS",
-      "tag": "NEW",
-      "statement": "Координатор может изменить событие расписания (сдвиг даты, добавление); система фиксирует было/стало/причину и уведомляет затронутый scope (cohort/team/person).",
-      "rationale": "intake Q17 — поток изменения расписания (что/когда/кому) не был смоделирован; сужающие сдвиги ограничены инвариантом заморозки.",
-      "acceptance": "изменение оставляет аудит было/стало/причина; уведомление адресовано по scope; сужающий сдвиг (раньше дедлайн) отклоняется (FR-FAIR-2, FR-CRD-2).",
-      "source": [
-        {
-          "label": "intake раунд 2 (Q17)"
-        }
-      ],
-      "performs": [
-        "coordinator"
-      ],
-      "concerns": [
-        "student",
-        "mentor"
-      ],
-      "version": 1,
-      "status": "draft",
-      "approvals": [],
-      "phase": [],
-      "crossCutting": true
-    },
-    {
-      "id": "FR-ENR-0",
-      "domain": "ENR",
-      "tag": "NEW",
-      "statement": "Bootstrap идентичности: первый вход человека (GitHub OAuth) создаёт ровно одну Person; повторный вход того же внешнего идентификатора резолвится в ту же Person. Person появляется до любого CourseMembership.",
-      "rationale": "intake Q3 — нет отдельного FR на bootstrap идентичности (account → Person). UC-STU-1 шаг 1.",
-      "acceptance": "N входов одного GitHub-аккаунта → 1 Person; вход без зачисления уже создаёт Person.",
-      "source": [
-        {
-          "label": "intake раунд 1 (Q3)"
-        }
-      ],
-      "performs": [
-        "student",
-        "mentor"
-      ],
-      "concerns": [
-        "core"
-      ],
-      "version": 1,
-      "status": "draft",
-      "approvals": [],
-      "phase": [
-        1
-      ],
-      "crossCutting": false
-    },
-    {
-      "id": "FR-ENR-1",
-      "domain": "ENR",
-      "tag": "Tandem",
-      "statement": "Человек может зарегистрироваться в наборе как студент (самозапись) или быть зачислен координатором.",
-      "rationale": "Tandem.",
-      "acceptance": "появляется `CourseMembership(role=student)` для конкретной Cohort.",
-      "source": [
-        {
-          "label": "Tandem"
-        }
-      ],
-      "performs": [
-        "student",
-        "coordinator"
-      ],
-      "concerns": [],
-      "version": 1,
-      "status": "proposed",
-      "approvals": [],
-      "phase": [
-        1
-      ],
-      "crossCutting": false
-    },
-    {
-      "id": "FR-ENR-2",
-      "domain": "ENR",
-      "tag": "Tandem",
-      "statement": "Один человек может иметь разные роли в разных наборах одновременно (студент здесь, ментор там).",
-      "rationale": "ADR §3.2.",
-      "acceptance": "роль не глобальна; смена роли в одном наборе не трогает другой.",
-      "source": [
-        {
-          "label": "ADR",
-          "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/rs-app-agentic-rearchitecture.md"
-        }
-      ],
-      "performs": [
-        "student",
-        "mentor"
-      ],
-      "concerns": [
-        "coordinator"
-      ],
-      "version": 1,
-      "status": "proposed",
-      "approvals": [],
-      "phase": [],
-      "crossCutting": true
-    },
-    {
-      "id": "FR-ENR-3",
-      "domain": "ENR",
-      "tag": "Tandem",
-      "statement": "Координатор может формировать команды внутри набора и переназначать состав.",
-      "rationale": "Tandem: participants.json.",
-      "acceptance": "студент может перейти из команды в команду с сохранением истории (TeamMembership с периодом).",
-      "source": [
-        {
-          "label": "Tandem: participants.json"
-        }
-      ],
-      "performs": [
-        "coordinator"
-      ],
-      "concerns": [
-        "student"
-      ],
-      "version": 1,
-      "status": "proposed",
-      "approvals": [],
-      "phase": [
-        1,
-        3
-      ],
-      "crossCutting": false
-    },
-    {
-      "id": "FR-ENR-4",
-      "domain": "ENR",
-      "tag": "Tandem",
-      "statement": "Координатор может пометить участника как `dropped`/неактивного, исключив из активного скоринга и экспорта.",
-      "rationale": "Tandem: export исключает role=mentor и dropped=true.",
-      "acceptance": "dropped-студент не попадает в CSV активных и в health-метрики.",
-      "source": [
-        {
-          "label": "Tandem: export"
-        }
-      ],
-      "performs": [
-        "coordinator"
-      ],
-      "concerns": [
-        "student",
-        "agent"
-      ],
-      "version": 1,
-      "status": "proposed",
-      "approvals": [],
-      "phase": [
-        3,
-        8
-      ],
-      "crossCutting": false
-    },
-    {
-      "id": "FR-ENR-5",
-      "domain": "ENR",
-      "tag": "NEW",
-      "statement": "Координатор может фильтровать «зарегистрировался, но неактивен» от реальных участников (whitelist по факту первого вклада/баллов).",
-      "rationale": "Tandem-урок: 200+ сырых заявок vs активные.",
-      "acceptance": "список активных строится по сигналу вклада, не по факту регистрации.",
-      "source": [
-        {
-          "label": "Tandem: 200+ заявок vs активные"
-        }
-      ],
-      "performs": [
-        "coordinator"
-      ],
-      "concerns": [],
-      "version": 1,
-      "status": "draft",
-      "approvals": [],
-      "phase": [
-        1,
-        8
-      ],
-      "crossCutting": false
-    },
-    {
-      "id": "FR-ENR-6",
-      "domain": "ENR",
-      "tag": "NEW",
-      "statement": "Возвращающийся участник распознаётся как та же Person: при заявке в новую когорту видны прошлый профиль и роли, дубль не создаётся; повторная заявка в ту же когорту дедуплицируется.",
-      "rationale": "intake Q4 — модель «одна Person на много когорт» есть, но нет распознавания вернувшегося и дедупа заявок (200+ сырых заявок).",
-      "acceptance": "заявка человека с существующей Person связывается с ней; дубль-заявка в одну когорту сливается/отклоняется; прошлые роли видны.",
-      "source": [
-        {
-          "label": "intake раунд 1 (Q4)"
-        }
-      ],
-      "performs": [
-        "coordinator"
-      ],
-      "concerns": [
-        "student",
-        "mentor"
-      ],
-      "version": 1,
-      "status": "draft",
-      "approvals": [],
-      "phase": [
-        1
-      ],
-      "crossCutting": false
-    },
-    {
-      "id": "FR-ENR-7",
-      "domain": "ENR",
-      "tag": "NEW",
-      "statement": "Студенты могут собираться в команду самозаписью (создать команду, вступить/пригласить) в рамках, заданных координатором. Владелец сборки — конфигурируемая политика когорты: coordinator / self-service / hybrid.",
-      "rationale": "intake Q5 — Tandem делал только coordinator-режим (participants.json); самосборка студентами не покрыта.",
-      "acceptance": "в self-service/hybrid студент может создать команду и вступить; в hybrid команда неактивна до approve координатора; в coordinator самозапись недоступна.",
-      "source": [
-        {
-          "label": "intake раунд 1 (Q5)"
-        }
-      ],
-      "performs": [
-        "student",
-        "coordinator"
-      ],
-      "concerns": [
-        "student"
-      ],
-      "version": 1,
-      "status": "draft",
-      "approvals": [],
-      "phase": [
-        1
-      ],
-      "crossCutting": false
-    },
-    {
-      "id": "FR-ENR-8",
-      "domain": "ENR",
-      "tag": "NEW",
-      "statement": "У команды есть роль TeamLead (0..1 активный на команду). Назначение зависит от политики сборки: в coordinator-режиме назначает координатор; в self-service/hybrid создатель по умолчанию лид, роль передаётся. Лид может переименовать команду, менять состав до заморозки, представлять команду.",
-      "rationale": "intake Q6 — CLAUDE.md упоминает «лид» в Team без модели прав и назначения.",
-      "acceptance": "≤1 активный TeamLead на команду в любой момент; смена лида сохраняется в истории.",
-      "source": [
-        {
-          "label": "intake раунд 1 (Q6)"
-        }
-      ],
-      "performs": [
-        "student",
-        "coordinator"
-      ],
-      "concerns": [
-        "student"
-      ],
-      "version": 1,
-      "status": "draft",
-      "approvals": [],
-      "phase": [
-        1
-      ],
-      "crossCutting": false
-    },
-    {
-      "id": "FR-ENR-9",
-      "domain": "ENR",
-      "tag": "NEW",
-      "statement": "Управление waitlist: при закрытом наборе/исчерпанном capacity заявка попадает в waitlist с позицией; координатор видит список и порядок и может промотировать в активные при освобождении места (промоушен порождает CourseMembership без повторной регистрации).",
-      "rationale": "intake Q12 — нет FR на управление и просмотр waitlist; UC-STU-1 alt лишь упоминает.",
-      "acceptance": "waitlist упорядочен (FIFO по умолчанию); промоушен переводит Person из waitlist в active; освобождение места видно координатору.",
-      "source": [
-        {
-          "label": "intake раунд 1 (Q12)"
-        }
-      ],
-      "performs": [
-        "coordinator"
-      ],
-      "concerns": [
-        "student"
-      ],
-      "version": 1,
-      "status": "draft",
-      "approvals": [],
-      "phase": [
-        1
-      ],
-      "crossCutting": false
-    },
-    {
-      "id": "FR-ENR-10",
-      "domain": "ENR",
-      "tag": "NEW",
-      "statement": "Переименование команды: уполномоченный актор (TeamLead или координатор — по политике сборки) может сменить название; история имён сохраняется (текущее показывается, прошлые — в аудите); slug-история не ломает ссылки.",
-      "rationale": "intake Q22 — нет FR на переименование команды (кто вправе, сохраняется ли история).",
-      "acceptance": "смена имени не ломает существующие ссылки; прошлые имена доступны в аудите.",
-      "source": [
-        {
-          "label": "intake раунд 3 (Q22)"
-        }
-      ],
-      "performs": [
-        "student",
-        "coordinator"
-      ],
-      "concerns": [
-        "student"
-      ],
-      "version": 1,
-      "status": "draft",
-      "approvals": [],
-      "phase": [
-        1,
-        3
-      ],
-      "crossCutting": false
-    },
-    {
-      "id": "FR-ENR-11",
-      "domain": "ENR",
-      "tag": "NEW",
-      "statement": "Расформирование/разделение команды в середине когорты (конфликт): координатор может распустить или разделить команду. Индивидуальный вклад каждого студента остаётся за ним; командный артефакт обрабатывается по явному правилу (наследуется под-командой или архивируется); студенты переназначаются с сохранением TeamMembership-истории.",
-      "rationale": "intake Q21 — нет сценария разрешения конфликта (split/dissolution mid-cohort); team-warmup подтверждает, что команды реально конфликтуют.",
-      "acceptance": "после split у каждого студента сохранён его вклад, нет «осиротевших» баллов; команда уведомлена.",
-      "source": [
-        {
-          "label": "intake раунд 3 (Q21)"
-        }
-      ],
-      "performs": [
-        "coordinator"
-      ],
-      "concerns": [
-        "student"
-      ],
-      "version": 1,
-      "status": "draft",
-      "approvals": [],
-      "phase": [
-        3
-      ],
-      "crossCutting": false
-    },
-    {
-      "id": "FR-MEN-1",
-      "domain": "MEN",
-      "tag": "Tandem",
-      "statement": "Координатор может открыть набор менторов в пул **до** kickoff и принимать самозаписи.",
-      "rationale": "mentor-staffing-policy.",
-      "acceptance": "пул менторов существует как сущность до даты kickoff.",
-      "source": [
-        {
-          "label": "mentor-staffing-policy",
-          "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/mentor-staffing-policy.md"
-        }
-      ],
-      "performs": [
-        "coordinator"
-      ],
-      "concerns": [
-        "mentor"
-      ],
-      "version": 1,
-      "status": "proposed",
-      "approvals": [],
-      "phase": [
-        1
-      ],
-      "crossCutting": false
-    },
-    {
-      "id": "FR-MEN-2",
-      "domain": "MEN",
-      "tag": "NEW",
-      "statement": "Если есть capacity, ментор проходит онбординг: минимальные требования (опыт/стек/часы), briefing о роли (слушатель защит, не PR-ревьюер), соглашение об ожиданиях.",
-      "rationale": "mentor-onboarding-intent.",
-      "acceptance": "статус онбординга (с/без скрининга) виден в kickoff (FR-FAIR-1).",
-      "source": [
-        {
-          "label": "mentor-onboarding-intent",
-          "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/mentor-onboarding-intent.md"
-        }
-      ],
-      "performs": [
-        "coordinator",
-        "mentor"
-      ],
-      "concerns": [
-        "student"
-      ],
-      "version": 1,
-      "status": "draft",
-      "approvals": [],
-      "phase": [
-        1
-      ],
-      "crossCutting": false
-    },
-    {
-      "id": "FR-MEN-3",
-      "domain": "MEN",
-      "tag": "Tandem",
-      "statement": "Координатор может вести **резервный пул** `mentor-on-call` (≥2), не привязанный к командам.",
-      "rationale": "mentor-staffing-policy.",
-      "acceptance": "резервный ментор активируется к команде без переназначения всей структуры.",
-      "source": [
-        {
-          "label": "mentor-staffing-policy",
-          "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/mentor-staffing-policy.md"
-        }
-      ],
-      "performs": [
-        "coordinator"
-      ],
-      "concerns": [
-        "mentor",
-        "student"
-      ],
-      "version": 1,
-      "status": "proposed",
-      "approvals": [],
-      "phase": [
-        1,
-        3
-      ],
-      "crossCutting": false
-    },
-    {
-      "id": "FR-MEN-4",
-      "domain": "MEN",
-      "tag": "Tandem",
-      "statement": "При уходе ментора координатор может активировать резерв в течение SLA (7 дней) или явно перевести команду в `self-driven` с уведомлением.",
-      "rationale": "mentor-staffing-policy.",
-      "acceptance": "MentoringLink меняет статус (`transferred`/`self-driven`) с аудит-записью; команда уведомлена.",
-      "source": [
-        {
-          "label": "mentor-staffing-policy",
-          "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/mentor-staffing-policy.md"
-        }
-      ],
-      "performs": [
-        "coordinator"
-      ],
-      "concerns": [
-        "mentor",
-        "student"
-      ],
-      "version": 1,
-      "status": "proposed",
-      "approvals": [],
-      "phase": [
-        3
-      ],
-      "crossCutting": false
-    },
-    {
-      "id": "FR-MEN-5",
-      "domain": "MEN",
-      "tag": "Tandem",
-      "statement": "Координатор может привязать ментора/ментор-пару к команде через гибкую связь с policy: `dedicated` / `team-bound` / `rotating` / `cross-mentor`.",
-      "rationale": "ADR §3.3 MentoringLink; «команды ходят на ревью кросс-менторов».",
-      "acceptance": "одна команда может иметь primary-ментора **и** rotating-interviewer одновременно.",
-      "source": [
-        {
-          "label": "ADR",
-          "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/rs-app-agentic-rearchitecture.md"
-        }
-      ],
-      "performs": [
-        "coordinator"
-      ],
-      "concerns": [
-        "mentor",
-        "student"
-      ],
-      "version": 1,
-      "status": "proposed",
-      "approvals": [],
-      "phase": [
-        1,
-        3,
-        7
-      ],
-      "crossCutting": false
-    },
-    {
-      "id": "FR-MEN-6",
-      "domain": "MEN",
-      "tag": "Tandem",
-      "statement": "Перед стартом командного этапа система даёт координатору **staffing-gate**: «команд без ментора = 0» + резерв ≥2 + self-driven помечены явно.",
-      "rationale": "mentor-staffing-policy: дефект Q3.",
-      "acceptance": "gate показывает список команд без ментора; пустой список — обязательное условие старта этапа.",
-      "source": [
-        {
-          "label": "mentor-staffing-policy",
-          "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/mentor-staffing-policy.md"
-        }
-      ],
-      "performs": [
-        "coordinator"
-      ],
-      "concerns": [
-        "mentor",
-        "student"
-      ],
-      "version": 1,
-      "status": "proposed",
-      "approvals": [],
-      "phase": [
-        1
-      ],
-      "crossCutting": false
-    },
-    {
-      "id": "FR-MEN-7",
-      "domain": "MEN",
-      "tag": "Tandem",
-      "statement": "Ментор может проводить регулярные встречи (раз в 1–2 недели), где студенты по очереди рассказывают о работе, и выставлять оценку **за понимание** по итогам встречи.",
-      "rationale": "mentor-as-defence-listener.",
-      "acceptance": "оценка привязана к DefenceSession (встреча), не к PR.",
-      "source": [
-        {
-          "label": "mentor-as-defence-listener",
-          "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/mentor-as-defence-listener.md"
-        }
-      ],
-      "performs": [
-        "mentor"
-      ],
-      "concerns": [
-        "student"
-      ],
-      "version": 1,
-      "status": "proposed",
-      "approvals": [],
-      "phase": [
-        3
-      ],
-      "crossCutting": false
-    },
-    {
-      "id": "FR-MEN-8",
-      "domain": "MEN",
-      "tag": "Tandem",
-      "statement": "Ментор-пара может слушать обе свои команды, но защиту проводит другой ментор (анти-конфликт интересов).",
-      "rationale": "mentor-staffing-policy.",
-      "acceptance": "на DefenceSession reviewer ≠ primary-ментор для случая ментор-пары.",
-      "source": [
-        {
-          "label": "mentor-staffing-policy",
-          "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/mentor-staffing-policy.md"
-        }
-      ],
-      "performs": [
-        "mentor"
-      ],
-      "concerns": [
-        "student",
-        "coordinator"
-      ],
-      "version": 1,
-      "status": "proposed",
-      "approvals": [],
-      "phase": [
-        3,
-        7
-      ],
-      "crossCutting": false
-    },
-    {
-      "id": "FR-MEN-9",
-      "domain": "MEN",
-      "tag": "NEW",
-      "statement": "MentoringLink поддерживает кратность N менторов на одну команду. Среди менторов команды ровно один помечен primary, остальные — co-mentor. Студент видит всех менторов своей команды с ролью; каждый ментор видит, где он primary, где co.",
-      "rationale": "intake Q13 — текущая модель (FR-MEN-5/8) покрывала лишь обратную кратность «1 ментор на 2 команды».",
-      "acceptance": "команда может иметь ≥1 ментора при ровно 1 primary; отображение различает primary/co для студента и для ментора.",
-      "source": [
-        {
-          "label": "intake раунд 1 (Q13)"
-        }
-      ],
-      "performs": [
-        "coordinator"
-      ],
-      "concerns": [
-        "student",
-        "mentor"
-      ],
-      "version": 1,
-      "status": "draft",
-      "approvals": [],
-      "phase": [
-        1,
-        3
-      ],
-      "crossCutting": false
-    },
-    {
-      "id": "FR-MEN-10",
-      "domain": "MEN",
-      "tag": "NEW",
-      "statement": "Координатор выбирает стратегию распределения менторов: manual / random / random-with-constraints. При random-with-constraints распределение учитывает атрибуты матчинга (язык(и), предпочтения/исключения), если система их держит как данные Person.",
-      "rationale": "intake Q14 — FR-MEN-5 не задавал стратегию распределения и атрибуты матчинга.",
-      "acceptance": "manual = текущее ручное привязывание; random-with-constraints не назначает ментора, нарушающего жёсткое ограничение (нет общего языка).",
-      "source": [
-        {
-          "label": "intake раунд 1 (Q14)"
-        }
-      ],
-      "performs": [
-        "coordinator"
-      ],
-      "concerns": [
-        "mentor",
-        "student"
-      ],
-      "version": 1,
-      "status": "draft",
-      "approvals": [],
-      "phase": [
-        1
-      ],
-      "crossCutting": false
-    },
-    {
-      "id": "FR-MEN-11",
-      "domain": "MEN",
-      "tag": "NEW",
-      "statement": "Mentor-initiated открепление/обмен: ментор может предложить открепить студента/команду или обменяться студентами с другим ментором; изменение применяется после approve координатора, MentoringLink-история и уведомления сохраняются.",
-      "rationale": "intake Q15 — FR-MEN-4 покрывал только уход ментора, не его инициативу по откреплению/обмену.",
-      "acceptance": "открепление/обмен инициируется ментором, требует approve координатора, оставляет аудит-запись; обе стороны уведомлены.",
-      "source": [
-        {
-          "label": "intake раунд 1 (Q15)"
-        }
-      ],
-      "performs": [
-        "mentor",
-        "coordinator"
-      ],
-      "concerns": [
-        "student"
-      ],
-      "version": 1,
-      "status": "draft",
-      "approvals": [],
-      "phase": [
-        3
-      ],
-      "crossCutting": false
-    },
-    {
-      "id": "FR-STU-1",
-      "domain": "STU",
-      "tag": "Tandem",
-      "statement": "Студент может вести дневник в репозитории; система считает записи по **дате в имени файла**.",
-      "rationale": "Tandem: Diary Filename Policy.",
-      "acceptance": "файл без парсимой даты виден, но не считается в weekly scoring.",
-      "source": [
-        {
-          "label": "Tandem: Diary Filename Policy"
-        }
-      ],
-      "performs": [
-        "student"
-      ],
-      "concerns": [
-        "agent"
-      ],
-      "version": 1,
-      "status": "proposed",
-      "approvals": [],
-      "phase": [
-        3
-      ],
-      "crossCutting": false
-    },
-    {
-      "id": "FR-STU-2",
-      "domain": "STU",
-      "tag": "Tandem",
-      "statement": "Студент видит свой статус по каждому этапу: что зачтено, что ждут на этой неделе, ближайшие дедлайны.",
-      "rationale": "ADR §5.3 Context Pack me-as-student.",
-      "acceptance": "статус однозначно сверяется с зафиксированными правилами kickoff.",
-      "source": [
-        {
-          "label": "ADR",
-          "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/rs-app-agentic-rearchitecture.md"
-        }
-      ],
-      "performs": [
-        "student"
-      ],
-      "concerns": [
-        "coordinator"
-      ],
-      "version": 1,
-      "status": "proposed",
-      "approvals": [],
-      "phase": [
-        3
-      ],
-      "crossCutting": false
-    },
-    {
-      "id": "FR-STU-3",
-      "domain": "STU",
-      "tag": "Tandem",
-      "statement": "Студент может использовать AI; засчитывается код, **который студент может объяснить** на защите.",
-      "rationale": "mentor-as-defence-listener.",
-      "acceptance": "артефакт оценки — объяснение на DefenceSession, не наличие кода.",
-      "source": [
-        {
-          "label": "mentor-as-defence-listener",
-          "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/mentor-as-defence-listener.md"
-        }
-      ],
-      "performs": [
-        "student"
-      ],
-      "concerns": [
-        "mentor"
-      ],
-      "version": 1,
-      "status": "proposed",
-      "approvals": [],
-      "phase": [
-        3,
-        7
-      ],
-      "crossCutting": false
-    },
-    {
-      "id": "FR-STU-4",
-      "domain": "STU",
-      "tag": "Tandem",
-      "statement": "Команда может оформить финальный README с обязательными артефактами (about + демо-видео + proud-of, team, board, best PRs, meeting notes) и рабочим деплоем.",
-      "rationale": "Tandem: w7.",
-      "acceptance": "деплой доступен по ссылке из README; проверяемо детерминированно.",
-      "source": [
-        {
-          "label": "Tandem: w7"
-        }
-      ],
-      "performs": [
-        "student"
-      ],
-      "concerns": [
-        "coordinator",
-        "jury"
-      ],
-      "version": 1,
-      "status": "proposed",
-      "approvals": [],
-      "phase": [
-        5
-      ],
-      "crossCutting": false
-    },
-    {
-      "id": "FR-STU-5",
-      "domain": "STU",
-      "tag": "Tandem",
-      "statement": "Студент может сдать self-assessment; при недоступности main координатор может подложить override.",
-      "rationale": "Tandem: sa-overrides.",
-      "acceptance": "override берёт приоритет над клоном main для конкретного студента.",
-      "source": [
-        {
-          "label": "Tandem: sa-overrides"
-        }
-      ],
-      "performs": [
-        "student",
-        "coordinator"
-      ],
-      "concerns": [],
-      "version": 1,
-      "status": "proposed",
-      "approvals": [],
-      "phase": [
-        7
-      ],
-      "crossCutting": false
-    },
-    {
-      "id": "FR-STU-6",
-      "domain": "STU",
-      "tag": "NEW",
-      "statement": "Студент может подключить **личного агента** и через него делать всё, что делает через UI, в рамках своего scope.",
-      "rationale": "ADR §2.3, §5.2.",
-      "acceptance": "действие агента логируется как «от агента X студента Y».",
-      "source": [
-        {
-          "label": "ADR",
-          "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/rs-app-agentic-rearchitecture.md"
-        }
-      ],
-      "performs": [
-        "student"
-      ],
-      "concerns": [
-        "agent"
-      ],
-      "version": 1,
-      "status": "draft",
-      "approvals": [],
-      "phase": [],
-      "crossCutting": true
-    },
-    {
-      "id": "FR-DEF-0",
-      "domain": "DEF",
-      "tag": "NEW",
-      "statement": "У задания (CohortTask) есть назначенный тип проверяющего: agent (кодинг-агент) / mentor (защита-понимание) / peer / deterministic (код-валидатор). Студент видит, кто/что проверит каждый таск.",
-      "rationale": "intake Q10b — типы проверки существовали, но не как явное поле задания.",
-      "acceptance": "у CohortTask есть reviewer-тип; контекст студента показывает проверяющего для каждого таска; смена типа — конфигом до заморозки.",
-      "source": [
-        {
-          "label": "intake раунд 1 (Q10b)"
-        }
-      ],
-      "performs": [
-        "coordinator"
-      ],
-      "concerns": [
-        "student"
-      ],
-      "version": 1,
-      "status": "draft",
-      "approvals": [],
-      "phase": [
-        0
-      ],
-      "crossCutting": false
-    },
-    {
-      "id": "FR-DEF-1",
-      "domain": "DEF",
-      "tag": "Tandem",
-      "statement": "PR-ы по заданиям проверяет **кодинг-агент**; ментор в общем случае их не разбирает.",
-      "rationale": "mentor-as-defence-listener §3.",
-      "acceptance": "есть TaskReview, где reviewer = SystemActor.",
-      "source": [
-        {
-          "label": "mentor-as-defence-listener",
-          "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/mentor-as-defence-listener.md"
-        }
-      ],
-      "performs": [
-        "agent"
-      ],
-      "concerns": [
-        "mentor",
-        "student"
-      ],
-      "version": 1,
-      "status": "proposed",
-      "approvals": [],
-      "phase": [
-        3
-      ],
-      "crossCutting": false
-    },
-    {
-      "id": "FR-DEF-2",
-      "domain": "DEF",
-      "tag": "Tandem",
-      "statement": "Система поддерживает регулярную менторскую встречу как лёгкую защиту (понимание), отдельно от финальной.",
-      "rationale": "mentor-as-defence-listener.",
-      "acceptance": "два разных типа DefenceSession с разным весом.",
-      "source": [
-        {
-          "label": "mentor-as-defence-listener",
-          "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/mentor-as-defence-listener.md"
-        }
-      ],
-      "performs": [
-        "mentor"
-      ],
-      "concerns": [
-        "student"
-      ],
-      "version": 1,
-      "status": "proposed",
-      "approvals": [],
-      "phase": [
-        3
-      ],
-      "crossCutting": false
-    },
-    {
-      "id": "FR-DEF-3",
-      "domain": "DEF",
-      "tag": "Tandem",
-      "statement": "Координатор может назначить **один раунд peer-review** (студент↔студент); система гарантирует его **в календаре раньше** финальной защиты, зазор 3–7 дней.",
-      "rationale": "peer-review-precedes-defence.",
-      "acceptance": "валидатор календаря не даёт опубликовать kickoff, где peer-review позже финальной защиты.",
-      "source": [
-        {
-          "label": "peer-review-precedes-defence",
-          "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/peer-review-precedes-defence.md"
-        }
-      ],
-      "performs": [
-        "coordinator"
-      ],
-      "concerns": [
-        "student"
-      ],
-      "version": 1,
-      "status": "proposed",
-      "approvals": [],
-      "phase": [
-        6
-      ],
-      "crossCutting": false
-    },
-    {
-      "id": "FR-DEF-4",
-      "domain": "DEF",
-      "tag": "Tandem",
-      "statement": "Ментор может провести финальную менторскую защиту как стресс-тест (архитектура, trade-offs, острые вопросы) и выставить итог.",
-      "rationale": "peer-review-precedes-defence.",
-      "acceptance": "результат финальной защиты идёт в сертификацию (FR-SCO-4).",
-      "source": [
-        {
-          "label": "peer-review-precedes-defence",
-          "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/peer-review-precedes-defence.md"
-        }
-      ],
-      "performs": [
-        "mentor"
-      ],
-      "concerns": [
-        "student"
-      ],
-      "version": 1,
-      "status": "proposed",
-      "approvals": [],
-      "phase": [
-        7
-      ],
-      "crossCutting": false
-    },
-    {
-      "id": "FR-DEF-5",
-      "domain": "DEF",
-      "tag": "Tandem",
-      "statement": "Координатор может организовать командную защиту перед jury и cross-mentor-ротацию (студент за курс слышит 4–6 разных менторов).",
-      "rationale": "mentor-staffing-policy §ротация.",
-      "acceptance": "DefenceSession поддерживает participants с typed role (defender/listener/jury), reviewer ≠ primary.",
-      "source": [
-        {
-          "label": "mentor-staffing-policy",
-          "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/mentor-staffing-policy.md"
-        }
-      ],
-      "performs": [
-        "coordinator",
-        "jury"
-      ],
-      "concerns": [
-        "mentor",
-        "student"
-      ],
-      "version": 1,
-      "status": "proposed",
-      "approvals": [],
-      "phase": [
-        7
-      ],
-      "crossCutting": false
-    },
-    {
-      "id": "FR-DEF-6",
-      "domain": "DEF",
-      "tag": "Tandem",
-      "statement": "Если финальная защита — пара (jury + менторская подряд), peer-review ставится перед **первой** из них.",
-      "rationale": "peer-review-precedes-defence.",
-      "acceptance": "календарный валидатор считает «первую финальную» точкой отсчёта.",
-      "source": [
-        {
-          "label": "peer-review-precedes-defence",
-          "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/peer-review-precedes-defence.md"
-        }
-      ],
-      "performs": [
-        "coordinator"
-      ],
-      "concerns": [
-        "student"
-      ],
-      "version": 1,
-      "status": "proposed",
-      "approvals": [],
-      "phase": [
-        6
-      ],
-      "crossCutting": false
-    },
-    {
-      "id": "FR-DEF-7",
-      "domain": "DEF",
-      "tag": "Tandem",
-      "statement": "В курсе с командным финалом координатор может ввести обязательный **командный warm-up** (1–2 недели, процессный, балл символический) до старта финала.",
-      "rationale": "team-warmup-before-final.",
-      "acceptance": "в календаре между последним индивидуальным этапом и финалом стоит warm-up; артефакт собирается, даже если выпал один участник.",
-      "source": [
-        {
-          "label": "team-warmup-before-final",
-          "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/team-warmup-before-final.md"
-        }
-      ],
-      "performs": [
-        "coordinator"
-      ],
-      "concerns": [
-        "student"
-      ],
-      "version": 1,
-      "status": "proposed",
-      "approvals": [],
-      "phase": [
-        4
-      ],
-      "crossCutting": false
-    },
-    {
-      "id": "FR-DEF-8",
-      "domain": "DEF",
-      "tag": "NEW",
-      "statement": "Координатор может собрать панель жюри (JuryPanel, 3–6 человек) на финальные/командные защиты, с типизированными ролями участников.",
-      "rationale": "intake Q19 — FR-DEF-5 даёт jury-защиту, но состав панели как сущность (3–6, роли) не моделировался.",
-      "acceptance": "панель имеет состав 3–6; участник — typed role (jury/listener); reviewer ≠ primary-ментор защищающейся команды (ср. FR-MEN-8).",
-      "source": [
-        {
-          "label": "intake раунд 2 (Q19)"
-        }
-      ],
-      "performs": [
-        "coordinator"
-      ],
-      "concerns": [
-        "jury",
-        "student"
-      ],
-      "version": 1,
-      "status": "draft",
-      "approvals": [],
-      "phase": [
-        7
-      ],
-      "crossCutting": false
-    },
-    {
-      "id": "FR-DEF-9",
-      "domain": "DEF",
-      "tag": "NEW",
-      "statement": "Координатор (или агент-планировщик) может создать слот защиты (DefenceSlot) с временем и длительностью (напр. 90/120 мин) и назначить на него несколько команд; слот привязан к панели жюри или ревьюеру.",
-      "rationale": "intake Q19 — слот-расписание защит (длительность, несколько команд в слоте, назначение команд) не моделировалось.",
-      "acceptance": "слот имеет время/длительность и ≥1 команду; команда видит свой слот и панель/ревьюера (FR-COM-4); для одной команды слоты не пересекаются.",
-      "source": [
-        {
-          "label": "intake раунд 2 (Q19)"
-        }
-      ],
-      "performs": [
-        "coordinator"
-      ],
-      "concerns": [
-        "student",
-        "jury",
-        "mentor"
-      ],
-      "version": 1,
-      "status": "draft",
-      "approvals": [],
-      "phase": [
-        7
-      ],
-      "crossCutting": false
-    },
-    {
-      "id": "FR-SCO-1",
-      "domain": "SCO",
-      "tag": "Tandem",
-      "statement": "Система **детерминированно** считает баллы по правилам этапа (клон main, проверка deploy/ci/linter/issues/diary/testing/review).",
-      "rationale": "Tandem: COLLECT; «оценивает код, не LLM».",
-      "acceptance": "повторный прогон на тех же данных даёт тот же балл.",
-      "source": [
-        {
-          "label": "Tandem: COLLECT"
-        }
-      ],
-      "performs": [
-        "agent",
-        "coordinator"
-      ],
-      "concerns": [
-        "student"
-      ],
-      "version": 1,
-      "status": "proposed",
-      "approvals": [],
-      "phase": [
-        3,
-        8
-      ],
-      "crossCutting": false
-    },
-    {
-      "id": "FR-SCO-2",
-      "domain": "SCO",
-      "tag": "Tandem",
-      "statement": "Дневник может оцениваться по ladder (0/20/60/80/100): уровни 0–60 детерминированно, 80/100 — через **LLM-binary** вопросы.",
-      "rationale": "Tandem: w6 v2-ladder.",
-      "acceptance": "код определяет 0/20/60; LLM только апгрейдит до 80/100.",
-      "source": [
-        {
-          "label": "Tandem: w6 v2-ladder"
-        }
-      ],
-      "performs": [
-        "agent",
-        "coordinator"
-      ],
-      "concerns": [
-        "student"
-      ],
-      "version": 1,
-      "status": "proposed",
-      "approvals": [],
-      "phase": [
-        8
-      ],
-      "crossCutting": false
-    },
-    {
-      "id": "FR-SCO-3",
-      "domain": "SCO",
-      "tag": "Tandem",
-      "statement": "Координатор может экспортировать баллы по чекпоинтам во внешний учёт (RS App / CSV `GitHub,Score`), только активные студенты.",
-      "rationale": "Tandem: export-scores-csv.",
-      "acceptance": "экспорт исключает role=mentor и dropped=true.",
-      "source": [
-        {
-          "label": "Tandem: export-scores-csv"
-        }
-      ],
-      "performs": [
-        "coordinator"
-      ],
-      "concerns": [
-        "student"
-      ],
-      "version": 1,
-      "status": "proposed",
-      "approvals": [],
-      "phase": [
-        8
-      ],
-      "crossCutting": false
-    },
-    {
-      "id": "FR-SCO-4",
-      "domain": "SCO",
-      "tag": "Tandem",
-      "statement": "Студент и координатор могут однозначно определить статус сертификата по зафиксированным критериям (числовой порог ИЛИ бинарный чек-лист).",
-      "rationale": "lock-rules-at-kickoff §1.",
-      "acceptance": "статус выводится только из данных + правил kickoff.",
-      "source": [
-        {
-          "label": "lock-rules-at-kickoff",
-          "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/lock-rules-at-kickoff.md"
-        }
-      ],
-      "performs": [
-        "student",
-        "coordinator"
-      ],
-      "concerns": [],
-      "version": 1,
-      "status": "proposed",
-      "approvals": [],
-      "phase": [
-        8
-      ],
-      "crossCutting": false
-    },
-    {
-      "id": "FR-SCO-5",
-      "domain": "SCO",
-      "tag": "Tandem",
-      "statement": "Координатор может объявить awards/номинации с **полным списком условий заранее**; добавлять номинации можно (расширение), менять условия существующей — нельзя.",
-      "rationale": "lock-rules-at-kickoff §2 + streamer-condition.",
-      "acceptance": "изменение условия существующей номинации после старта отклоняется.",
-      "source": [
-        {
-          "label": "lock-rules-at-kickoff",
-          "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/lock-rules-at-kickoff.md"
-        }
-      ],
-      "performs": [
-        "coordinator"
-      ],
-      "concerns": [
-        "student"
-      ],
-      "version": 1,
-      "status": "proposed",
-      "approvals": [],
-      "phase": [
-        0,
-        8
-      ],
-      "crossCutting": false
-    },
-    {
-      "id": "FR-SCO-6",
-      "domain": "SCO",
-      "tag": "Open",
-      "statement": "Роль баллов после AI пересматривается (TrustSignal вместо лидерборда).",
-      "rationale": "score-philosophy-after-ai (open ADR). Фиксируется как зависимость.",
-      "acceptance": "",
-      "source": [
-        {
-          "label": "score-philosophy-after-ai",
-          "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/score-philosophy-after-ai.md"
-        }
-      ],
-      "performs": [
-        "coordinator"
-      ],
-      "concerns": [
-        "student"
-      ],
-      "version": 1,
-      "status": "draft",
-      "approvals": [],
-      "phase": [],
-      "crossCutting": true
-    },
-    {
-      "id": "FR-CRD-0",
-      "domain": "CRD",
-      "tag": "NEW",
-      "statement": "Core team может назначить/снять координатора на когорту явным актом (грант роли coordinator со scope когорты).",
-      "rationale": "intake Q9 — §2 говорит «назначается core team», но явного FR/UC на акт назначения не было.",
-      "acceptance": "назначение = AccessGrant(role=coordinator, scope=cohort); снятие = expires_at=now(); до назначения у когорты нет владельца-координатора.",
-      "source": [
-        {
-          "label": "intake раунд 1 (Q9)"
-        }
-      ],
-      "performs": [
-        "core"
-      ],
-      "concerns": [
-        "coordinator"
-      ],
-      "version": 1,
-      "status": "draft",
-      "approvals": [],
-      "phase": [
-        0
-      ],
-      "crossCutting": false
-    },
-    {
-      "id": "FR-CRD-1",
-      "domain": "CRD",
-      "tag": "Tandem",
-      "statement": "Координатор видит **health-check набора**: кто из менторов пропал, какие команды без активности, top-проблемы.",
-      "rationale": "ADR §5.3 Context Pack me-as-coordinator; Tandem: healthcheck.",
-      "acceptance": "один экран/контекст отвечает «что требует внимания сегодня».",
-      "source": [
-        {
-          "label": "ADR",
-          "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/rs-app-agentic-rearchitecture.md"
-        },
-        {
-          "label": "Tandem: healthcheck"
-        }
-      ],
-      "performs": [
-        "coordinator"
-      ],
-      "concerns": [
-        "mentor"
-      ],
-      "version": 1,
-      "status": "proposed",
-      "approvals": [],
-      "phase": [],
-      "crossCutting": true
-    },
-    {
-      "id": "FR-CRD-2",
-      "domain": "CRD",
-      "tag": "Tandem",
-      "statement": "Координатор может делать **расширения в пользу студента** публично (мягче дедлайн, доп. время) с записью «было/стало/причина/с даты».",
-      "rationale": "lock-rules-at-kickoff §3.",
-      "acceptance": "сужение правил по ходу набора запрещено.",
-      "source": [
-        {
-          "label": "lock-rules-at-kickoff",
-          "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/lock-rules-at-kickoff.md"
-        }
-      ],
-      "performs": [
-        "coordinator"
-      ],
-      "concerns": [
-        "student"
-      ],
-      "version": 1,
-      "status": "proposed",
-      "approvals": [],
-      "phase": [],
-      "crossCutting": true
-    },
-    {
-      "id": "FR-CRD-3",
-      "domain": "CRD",
-      "tag": "Tandem",
-      "statement": "Координатор может рассылать объявления набору/команде/студенту.",
-      "rationale": "Tandem.",
-      "acceptance": "объявление адресуемо по scope (cohort/team/person).",
-      "source": [
-        {
-          "label": "Tandem"
-        }
-      ],
-      "performs": [
-        "coordinator"
-      ],
-      "concerns": [
-        "student",
-        "mentor"
-      ],
-      "version": 1,
-      "status": "proposed",
-      "approvals": [],
-      "phase": [],
-      "crossCutting": true
-    },
-    {
-      "id": "FR-CRD-4",
-      "domain": "CRD",
-      "tag": "Tandem",
-      "statement": "Координатор может перезапускать сбор данных по **одной команде/студенту** (targeted rerun), не делая полный sweep.",
-      "rationale": "Tandem-урок: late-submission targeted rerun.",
-      "acceptance": "`--team`-режим обновляет инкрементально, не затирая остальных.",
-      "source": [
-        {
-          "label": "Tandem: late-submission targeted rerun"
-        }
-      ],
-      "performs": [
-        "coordinator",
-        "agent"
-      ],
-      "concerns": [
-        "student"
-      ],
-      "version": 1,
-      "status": "proposed",
-      "approvals": [],
-      "phase": [
-        3,
-        8
-      ],
-      "crossCutting": false
-    },
-    {
-      "id": "FR-CRD-5",
-      "domain": "CRD",
-      "tag": "Tandem",
-      "statement": "Координатор может зарегистрировать **CourseAgent** со scope, ограниченным своим набором.",
-      "rationale": "ADR §3.4.",
-      "acceptance": "scope агента не выходит за пределы Cohort.",
-      "source": [
-        {
-          "label": "ADR",
-          "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/rs-app-agentic-rearchitecture.md"
-        }
-      ],
-      "performs": [
-        "coordinator"
-      ],
-      "concerns": [
-        "agent"
-      ],
-      "version": 1,
-      "status": "proposed",
-      "approvals": [],
-      "phase": [
-        0
-      ],
-      "crossCutting": false
-    },
-    {
-      "id": "FR-CRD-6",
-      "domain": "CRD",
-      "tag": "Tandem",
-      "statement": "Координатор может назначать/снимать роли в наборе (mentor, jury, helper) грантами с истечением.",
-      "rationale": "ADR §6.3 AccessGrant.",
-      "acceptance": "снятие роли = `expires_at=now()`, мгновенно.",
-      "source": [
-        {
-          "label": "ADR",
-          "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/rs-app-agentic-rearchitecture.md"
-        }
-      ],
-      "performs": [
-        "coordinator"
-      ],
-      "concerns": [
-        "mentor",
-        "jury"
-      ],
-      "version": 1,
-      "status": "proposed",
-      "approvals": [],
-      "phase": [],
-      "crossCutting": true
-    },
-    {
-      "id": "FR-CRD-7",
-      "domain": "CRD",
-      "tag": "Tandem",
-      "statement": "Координатор может закрыть набор; Contribution сохраняются, временные связи истекают.",
-      "rationale": "ADR §9.",
-      "acceptance": "после закрытия профили сохраняют вклад; активные гранты по этому набору истекают.",
-      "source": [
-        {
-          "label": "ADR",
-          "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/rs-app-agentic-rearchitecture.md"
-        }
-      ],
-      "performs": [
-        "coordinator"
-      ],
-      "concerns": [
-        "student",
-        "mentor"
-      ],
-      "version": 1,
-      "status": "proposed",
-      "approvals": [],
-      "phase": [
-        9
-      ],
-      "crossCutting": false
-    },
-    {
-      "id": "FR-AGT-1",
-      "domain": "AGT",
-      "tag": "Tandem",
-      "statement": "Любой агент действует под собственной identity (SystemActor) с явным scope и owner-Person; **не под фейковым GitHub-аккаунтом**.",
-      "rationale": "ADR §0, §3.4.",
-      "acceptance": "запрос агента отличим в аудите от запроса человека.",
-      "source": [
-        {
-          "label": "ADR",
-          "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/rs-app-agentic-rearchitecture.md"
-        }
-      ],
-      "performs": [
-        "agent"
-      ],
-      "concerns": [
-        "student",
-        "coordinator",
-        "core"
-      ],
-      "version": 1,
-      "status": "proposed",
-      "approvals": [],
-      "phase": [],
-      "crossCutting": true
-    },
-    {
-      "id": "FR-AGT-2",
-      "domain": "AGT",
-      "tag": "Tandem",
-      "statement": "Agent Dementor может читать активность студентов набора и переводить статус active→inactive + слать уведомления; **не может** трогать баллы или удалять курс.",
-      "rationale": "ADR §3.4.",
-      "acceptance": "попытка `write:score`/`delete:cohort` отклоняется на уровне scope.",
-      "source": [
-        {
-          "label": "ADR",
-          "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/rs-app-agentic-rearchitecture.md"
-        }
-      ],
-      "performs": [
-        "agent"
-      ],
-      "concerns": [
-        "student",
-        "coordinator"
-      ],
-      "version": 1,
-      "status": "proposed",
-      "approvals": [],
-      "phase": [
-        3
-      ],
-      "crossCutting": false
-    },
-    {
-      "id": "FR-AGT-3",
-      "domain": "AGT",
-      "tag": "Tandem",
-      "statement": "Core team может регистрировать CoreAgent (Dementor, collector/Скаут, narrator/Перо) с глобальным scope; расширение scope сверх стандартного требует одобрения второго core-member.",
-      "rationale": "ADR §6.2.",
-      "acceptance": "регистрация с нестандартным scope требует двойного подтверждения.",
-      "source": [
-        {
-          "label": "ADR",
-          "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/rs-app-agentic-rearchitecture.md"
-        }
-      ],
-      "performs": [
-        "core"
-      ],
-      "concerns": [
-        "agent"
-      ],
-      "version": 1,
-      "status": "proposed",
-      "approvals": [],
-      "phase": [],
-      "crossCutting": true
-    },
-    {
-      "id": "FR-AGT-4",
-      "domain": "AGT",
-      "tag": "Tandem",
-      "statement": "Collector-агент может детерминированно клонировать main и считать чекпоинты (роль COLLECT/Статист).",
-      "rationale": "Tandem.",
-      "acceptance": "агент-collector — обычный SystemActor со scope чтения репозиториев + записи submissions.",
-      "source": [
-        {
-          "label": "Tandem"
-        }
-      ],
-      "performs": [
-        "agent"
-      ],
-      "concerns": [
-        "coordinator",
-        "student"
-      ],
-      "version": 1,
-      "status": "proposed",
-      "approvals": [],
-      "phase": [
-        3,
-        8
-      ],
-      "crossCutting": false
-    },
-    {
-      "id": "FR-AGT-5",
-      "domain": "AGT",
-      "tag": "Tandem",
-      "statement": "Narrator-агент (Tandi/Перо) может читать дневники и публиковать тексты-наблюдения; **не ставит баллы**.",
-      "rationale": "Tandem: «Tandi — наблюдатель, не проверяющий».",
-      "acceptance": "narrator не имеет scope записи в score.",
-      "source": [
-        {
-          "label": "Tandem: Tandi — наблюдатель"
-        }
-      ],
-      "performs": [
-        "agent"
-      ],
-      "concerns": [
-        "student"
-      ],
-      "version": 1,
-      "status": "proposed",
-      "approvals": [],
-      "phase": [
-        3
-      ],
-      "crossCutting": false
-    },
-    {
-      "id": "FR-AGT-6",
-      "domain": "AGT",
-      "tag": "Tandem",
-      "statement": "Агент-новичок может запросить «что я могу прямо сейчас» (`list_my_capabilities`) и получить контракт по своему scope.",
-      "rationale": "ADR §5.2.",
-      "acceptance": "ответ зависит от scope текущего токена.",
-      "source": [
-        {
-          "label": "ADR",
-          "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/rs-app-agentic-rearchitecture.md"
-        }
-      ],
-      "performs": [
-        "agent"
-      ],
-      "concerns": [],
-      "version": 1,
-      "status": "proposed",
-      "approvals": [],
-      "phase": [],
-      "crossCutting": true
-    },
-    {
-      "id": "FR-AGT-7",
-      "domain": "AGT",
-      "tag": "NEW",
-      "statement": "Система ограничивает регистрацию агентов одним Person (rate-limit + минимальный TrustSignal-порог) против спама.",
-      "rationale": "ADR §9.",
-      "acceptance": "превышение лимита регистраций отклоняется.",
-      "source": [
-        {
-          "label": "ADR",
-          "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/rs-app-agentic-rearchitecture.md"
-        }
-      ],
-      "performs": [
-        "core"
-      ],
-      "concerns": [
-        "coordinator",
-        "student"
-      ],
-      "version": 1,
-      "status": "draft",
-      "approvals": [],
-      "phase": [],
-      "crossCutting": true
-    },
-    {
-      "id": "FR-AGT-8",
-      "domain": "AGT",
-      "tag": "NEW",
-      "statement": "Координатор может зарегистрировать агента-планировщика (CourseAgent со scope расписания), который строит/предлагает расписание защит и назначение команд на слоты; не ставит баллы и финализирует в рамках scope или с approve координатора.",
-      "rationale": "intake Q19 — «хорошо бы это мог делать AI-агент (Claude Code)»: планировщик как CourseAgent со scope расписания.",
-      "acceptance": "scope агента ограничен расписанием когорты (FR-CRD-5); попытка write:score отклоняется (как FR-AGT-2); предложенное расписание применяется по правилам scope.",
-      "source": [
-        {
-          "label": "intake раунд 2 (Q19)"
-        }
-      ],
-      "performs": [
-        "agent"
-      ],
-      "concerns": [
-        "coordinator"
-      ],
-      "version": 1,
-      "status": "draft",
-      "approvals": [],
-      "phase": [
-        7
-      ],
-      "crossCutting": false
-    },
-    {
-      "id": "FR-COM-1",
-      "domain": "COM",
-      "tag": "Tandem",
-      "statement": "Студент/ментор/команда получают уведомления о значимых событиях (дедлайн, защита, изменение-расширение правил, фидбек).",
-      "rationale": "Tandem.",
-      "acceptance": "уведомление порождается из Activity-листенера, не вручную.",
-      "source": [
-        {
-          "label": "Tandem"
-        }
-      ],
-      "performs": [
-        "agent"
-      ],
-      "concerns": [
-        "student",
-        "mentor"
-      ],
-      "version": 1,
-      "status": "proposed",
-      "approvals": [],
-      "phase": [],
-      "crossCutting": true
-    },
-    {
-      "id": "FR-COM-2",
-      "domain": "COM",
-      "tag": "Tandem",
-      "statement": "Любой student-visible статус («исправлено», «зачтено») публикуется **после** того, как изменение реально применено.",
-      "rationale": "Tandem session-protocol: deploy first, comment second.",
-      "acceptance": "комментарий «fixed» не уходит раньше, чем фикс виден студенту.",
-      "source": [
-        {
-          "label": "Tandem: session-protocol"
-        }
-      ],
-      "performs": [
-        "coordinator",
-        "agent"
-      ],
-      "concerns": [
-        "student"
-      ],
-      "version": 1,
-      "status": "proposed",
-      "approvals": [],
-      "phase": [],
-      "crossCutting": true
-    },
-    {
-      "id": "FR-COM-3",
-      "domain": "COM",
-      "tag": "NEW",
-      "statement": "Член комьюнити может подписаться на набор/человека (CommunityFollow) и получать feed «что нового».",
-      "rationale": "ADR §3.3, §3.5.",
-      "acceptance": "feed строится из Activity по подпискам.",
-      "source": [
-        {
-          "label": "ADR",
-          "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/rs-app-agentic-rearchitecture.md"
-        }
-      ],
-      "performs": [
-        "student",
-        "jury"
-      ],
-      "concerns": [],
-      "version": 1,
-      "status": "draft",
-      "approvals": [],
-      "phase": [],
-      "crossCutting": true
-    },
-    {
-      "id": "FR-COM-4",
-      "domain": "COM",
-      "tag": "NEW",
-      "statement": "Видимость контактов: студент видит ментора(ов) своей команды и канал связи; при ротации видит, кто его ревьюер на текущей неделе/сессии и как с ним связаться / где сессия.",
-      "rationale": "intake Q7, Q8 — видимость контактов ментор↔студент и спринт-ревьюера недели не была смоделирована.",
-      "acceptance": "контекст студента включает текущего(их) ментора(ов) + ревьюера ближайшей защиты с каналом связи; при ротации значение меняется по календарю.",
-      "source": [
-        {
-          "label": "intake раунд 1 (Q7,Q8)"
-        }
-      ],
-      "performs": [
-        "student"
-      ],
-      "concerns": [
-        "mentor"
-      ],
-      "version": 1,
-      "status": "draft",
-      "approvals": [],
-      "phase": [
-        3
-      ],
-      "crossCutting": false
-    },
-    {
-      "id": "FR-PRO-1",
-      "domain": "PRO",
-      "tag": "Tandem",
-      "statement": "Профиль агрегирует Contribution из всех наборов/ролей (не только последняя).",
-      "rationale": "ADR §2.1–2.2.",
-      "acceptance": "профиль показывает вклад за несколько курсов и ролей.",
-      "source": [
-        {
-          "label": "ADR",
-          "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/rs-app-agentic-rearchitecture.md"
-        }
-      ],
-      "performs": [
-        "student"
-      ],
-      "concerns": [
-        "hirer",
-        "coordinator"
-      ],
-      "version": 1,
-      "status": "proposed",
-      "approvals": [],
-      "phase": [],
-      "crossCutting": true
-    },
-    {
-      "id": "FR-PRO-2",
-      "domain": "PRO",
-      "tag": "Tandem",
-      "statement": "Contribution immutable и переживает закрытие набора и смену роли.",
-      "rationale": "ADR §3.1.",
-      "acceptance": "закрытие cohort не удаляет Contribution.",
-      "source": [
-        {
-          "label": "ADR",
-          "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/rs-app-agentic-rearchitecture.md"
-        }
-      ],
-      "performs": [
-        "student"
-      ],
-      "concerns": [],
-      "version": 1,
-      "status": "proposed",
-      "approvals": [],
-      "phase": [],
-      "crossCutting": true
-    },
-    {
-      "id": "FR-PRO-3",
-      "domain": "PRO",
-      "tag": "Tandem",
-      "statement": "Человек может получать Endorsement от другого человека в контексте.",
-      "rationale": "ADR §3.1.",
-      "acceptance": "Endorsement — факт, не балл; виден в профиле.",
-      "source": [
-        {
-          "label": "ADR",
-          "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/rs-app-agentic-rearchitecture.md"
-        }
-      ],
-      "performs": [
-        "student",
-        "mentor",
-        "coordinator"
-      ],
-      "concerns": [],
-      "version": 1,
-      "status": "proposed",
-      "approvals": [],
-      "phase": [],
-      "crossCutting": true
-    },
-    {
-      "id": "FR-PRO-4",
-      "domain": "PRO",
-      "tag": "NEW",
-      "statement": "При переходе между курсами Contribution-история переносится автоматически (одна Person).",
-      "rationale": "ADR §9.",
-      "acceptance": "новый набор видит прошлый вклад той же Person.",
-      "source": [
-        {
-          "label": "ADR",
-          "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/rs-app-agentic-rearchitecture.md"
-        }
-      ],
-      "performs": [
-        "student"
-      ],
-      "concerns": [
-        "coordinator"
-      ],
-      "version": 1,
-      "status": "draft",
-      "approvals": [],
-      "phase": [],
-      "crossCutting": true
-    },
-    {
-      "id": "FR-FAIR-1",
-      "domain": "FAIR",
-      "tag": "Tandem",
-      "statement": "К моменту kickoff зафиксированы и опубликованы 5 секций: критерии сертификата, бенефиты (или «нет бенефитов»), защиты, scope этапов, календарь. Студент сверяет статус, читая **только** kickoff.",
-      "rationale": "lock-rules-at-kickoff.",
-      "acceptance": "публикация kickoff проходит чек-лист из 5 пунктов.",
-      "source": [
-        {
-          "label": "lock-rules-at-kickoff",
-          "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/lock-rules-at-kickoff.md"
-        }
-      ],
-      "performs": [
-        "coordinator"
-      ],
-      "concerns": [
-        "student"
-      ],
-      "version": 1,
-      "status": "proposed",
-      "approvals": [],
-      "phase": [
-        2
-      ],
-      "crossCutting": false
-    },
-    {
-      "id": "FR-FAIR-2",
-      "domain": "FAIR",
-      "tag": "Tandem",
-      "statement": "После старта набора эти секции **read-only**; изменения только в сторону расширения для студента и только публично; сужения — со следующего набора.",
-      "rationale": "lock-rules-at-kickoff.",
-      "acceptance": "система/процесс не допускает сужающую правку текущего набора.",
-      "source": [
-        {
-          "label": "lock-rules-at-kickoff",
-          "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/lock-rules-at-kickoff.md"
-        }
-      ],
-      "performs": [
-        "coordinator"
-      ],
-      "concerns": [
-        "student"
-      ],
-      "version": 1,
-      "status": "proposed",
-      "approvals": [],
-      "phase": [],
-      "crossCutting": true
-    },
-    {
-      "id": "FR-FAIR-3",
-      "domain": "FAIR",
-      "tag": "Tandem",
-      "statement": "Если правило признано сломанным (травмирует/нечестно), координатор обязан признать и **компенсировать в текущем наборе**.",
-      "rationale": "lock-rules-at-kickoff §ловушки.",
-      "acceptance": "есть путь «исправить в пользу студента сейчас».",
-      "source": [
-        {
-          "label": "lock-rules-at-kickoff",
-          "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/lock-rules-at-kickoff.md"
-        }
-      ],
-      "performs": [
-        "coordinator"
-      ],
-      "concerns": [
-        "student"
-      ],
-      "version": 1,
-      "status": "proposed",
-      "approvals": [],
-      "phase": [],
-      "crossCutting": true
-    },
-    {
-      "id": "FR-FAIR-4",
-      "domain": "FAIR",
-      "tag": "Tandem",
-      "statement": "Видимые противоречивые сигналы (красный ✗ или мёртвая ссылка рядом с максимальным баллом) не показываются студенту: блок скрывается, а не «объясняется».",
-      "rationale": "Tandem feedback: no contradiction signals.",
-      "acceptance": "при максимальном балле провальные под-маркеры не рендерятся.",
-      "source": [
-        {
-          "label": "Tandem: no contradiction signals"
-        }
-      ],
-      "performs": [
-        "coordinator"
-      ],
-      "concerns": [
-        "student"
-      ],
-      "version": 1,
-      "status": "proposed",
-      "approvals": [],
-      "phase": [],
-      "crossCutting": true
-    }
+ "meta": {
+  "updated": "2026-07-18",
+  "wikiBase": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/",
+  "phases": [
+   {
+    "n": 0,
+    "label": "Проектирование курса",
+    "desc": "Координатор создаёт Course-шаблон, заводит Cohort, задаёт календарь, этапы, правила, feature-флаги, готовит kickoff (5 секций). Core team назначает координатора."
+   },
+   {
+    "n": 1,
+    "label": "Набор и комплектация",
+    "desc": "Менторы: набор в пул до kickoff, онбординг, резерв ≥2. Студенты: самозапись/зачисление, waitlist при capacity. Команды формируются (по политике сборки), привязываются менторы. Staffing-gate «команд без ментора = 0»."
+   },
+   {
+    "n": 2,
+    "label": "Kickoff и заморозка",
+    "desc": "Публикуется kickoff. С момента старта когорты 5 секций read-only; изменения — только в пользу студента и только публично."
+   },
+   {
+    "n": 3,
+    "label": "Учебные недели",
+    "desc": "Студент делает задания и ведёт дневник. PR-ревью делает кодинг-агент, не ментор. Ментор раз в 1–2 недели слушает понимание. Детерминированный сбор баллов. Dementor дёргает неактивных."
+   },
+   {
+    "n": 4,
+    "label": "Командный warm-up",
+    "desc": "Отдельный процессный таск: GitHub Flow, PR-flow, созвоны, распределение. Балл символический — команда учится работать вместе до финала."
+   },
+   {
+    "n": 5,
+    "label": "Финальный проект",
+    "desc": "Команда делает финал по зафиксированному scope (без scope-creep). README с артефактами + рабочий деплой + демо-видео."
+   },
+   {
+    "n": 6,
+    "label": "Peer-review",
+    "desc": "Один раунд peer-review (студент↔студент) до финальной защиты, зазор 3–7 дней — репетиция."
+   },
+   {
+    "n": 7,
+    "label": "Финальные защиты",
+    "desc": "Self-assessment студента. Менторская защита как стресс-тест понимания. Командная защита перед jury (опц.) + cross-mentor ротация."
+   },
+   {
+    "n": 8,
+    "label": "Подведение итогов",
+    "desc": "Скоринг (детерминированные правила + LLM-upgrade дневника). Сертификация по зафиксированным критериям. Awards (опц.). Экспорт баллов во внешний учёт."
+   },
+   {
+    "n": 9,
+    "label": "Закрытие когорты",
+    "desc": "Cohort закрывается. Contribution остаются навсегда; MentoringLink/AccessGrant истекают."
+   }
   ],
-  "invariants": [
-    {
-      "id": "INV-1",
-      "tag": "Tandem",
-      "status": "proposed",
-      "statement": "Оценивает код (детерминированно) или человек (субъективно) — не LLM.",
-      "rationale": "Tandem: «оценивает код, не LLM»; LLM только апгрейдит дневник до 80/100 поверх детерминированного 0–60.",
-      "governs": [
-        "FR-SCO-1",
-        "FR-SCO-2",
-        "FR-AGT-5"
-      ],
-      "source": [
-        {
-          "label": "Tandem Q3"
-        }
-      ]
-    },
-    {
-      "id": "INV-2",
-      "tag": "Tandem",
-      "status": "proposed",
-      "statement": "Контракт замораживается на kickoff. Изменения — только в пользу студента и только публично.",
-      "rationale": "lock-rules-at-kickoff: 5 секций read-only после старта; сужение — со следующей когорты.",
-      "governs": [
-        "FR-FAIR-1",
-        "FR-FAIR-2",
-        "FR-FAIR-3"
-      ],
-      "source": [
-        {
-          "label": "lock-rules-at-kickoff"
-        }
-      ]
-    },
-    {
-      "id": "INV-3",
-      "tag": "Tandem",
-      "status": "proposed",
-      "statement": "Каждая команда командного этапа имеет ментора — или явно помечена self-driven.",
-      "rationale": "mentor-staffing-policy: staffing-gate «команд без ментора = 0» как условие старта этапа.",
-      "governs": [
-        "FR-MEN-6",
-        "FR-MEN-4"
-      ],
-      "source": [
-        {
-          "label": "mentor-staffing-policy"
-        }
-      ]
-    },
-    {
-      "id": "INV-4",
-      "tag": "Tandem",
-      "status": "proposed",
-      "statement": "Peer-review — репетиция: идёт в календаре до финальной защиты.",
-      "rationale": "peer-review-precedes-defence: зазор 3–7 дней; календарный валидатор не даёт поставить позже.",
-      "governs": [
-        "FR-DEF-3",
-        "FR-DEF-6"
-      ],
-      "source": [
-        {
-          "label": "peer-review-precedes-defence"
-        }
-      ]
-    },
-    {
-      "id": "INV-5",
-      "tag": "Tandem",
-      "status": "proposed",
-      "statement": "Команда входит в финал, уже умея работать вместе (командный warm-up до финала).",
-      "rationale": "team-warmup-before-final: процессный таск между индивидуальными неделями и финалом.",
-      "governs": [
-        "FR-DEF-7"
-      ],
-      "source": [
-        {
-          "label": "team-warmup-before-final"
-        }
-      ]
-    },
-    {
-      "id": "INV-6",
-      "tag": "Tandem",
-      "status": "proposed",
-      "statement": "Понимание важнее артефакта.",
-      "rationale": "mentor-as-defence-listener: засчитывается код, который студент может объяснить на защите.",
-      "governs": [
-        "FR-STU-3",
-        "FR-MEN-7"
-      ],
-      "source": [
-        {
-          "label": "mentor-as-defence-listener"
-        }
-      ]
-    },
-    {
-      "id": "INV-7",
-      "tag": "Tandem",
-      "status": "proposed",
-      "statement": "Агент — это identity со scope, не супер-юзер и не фейковый человек.",
-      "rationale": "ADR §0/§3.4: SystemActor с owner-Person и явным scope; запрос агента отличим в аудите.",
-      "governs": [
-        "FR-AGT-1",
-        "FR-AGT-2"
-      ],
-      "source": [
-        {
-          "label": "ADR §3.4"
-        }
-      ]
-    },
-    {
-      "id": "INV-8",
-      "tag": "Tandem",
-      "status": "proposed",
-      "statement": "Деплой раньше слова: student-visible статус публикуется после того, как изменение применено.",
-      "rationale": "session-protocol: «deploy first, comment second» — не говорить «исправлено» до того, как фикс виден.",
-      "governs": [
-        "FR-COM-2"
-      ],
-      "source": [
-        {
-          "label": "session-protocol"
-        }
-      ]
-    },
-    {
-      "id": "INV-9",
-      "tag": "Tandem",
-      "status": "proposed",
-      "statement": "Вклад вечен, связи временны.",
-      "rationale": "ADR §9: Contribution immutable и переживает закрытие когорты; MentoringLink/гранты истекают.",
-      "governs": [
-        "FR-PRO-2",
-        "FR-CRD-7"
-      ],
-      "source": [
-        {
-          "label": "ADR §9"
-        }
-      ]
-    },
-    {
-      "id": "INV-10",
-      "tag": "Tandem",
-      "status": "proposed",
-      "statement": "Никаких противоречивых сигналов студенту (красный ✗ или мёртвая ссылка рядом с максимальным баллом).",
-      "rationale": "Tandem feedback: при максимальном балле провальные под-маркеры не рендерятся — блок скрыт, не «объяснён».",
-      "governs": [
-        "FR-FAIR-4"
-      ],
-      "source": [
-        {
-          "label": "Tandem feedback"
-        }
-      ]
-    },
-    {
-      "id": "INV-11",
-      "tag": "NEW",
-      "status": "draft",
-      "statement": "Видимость зовёт, а не стыдит. Дефицит и прогресс других видны как приглашение к участию — без персонального позора и лидерборда.",
-      "rationale": "intake принцип O: «показал, сколько команд без ментора → волонтёров стало больше, чем студентов»; «студенты видят чужие презентации — присоединяются». Поведенческая часть («показывать дефицит/прогресс публично») едет на FR-MEN-6 / FR-COM-3; ↔ FR-SCO-6 (без скатывания в лидерборд).",
-      "governs": [
-        "FR-MEN-6",
-        "FR-COM-3",
-        "FR-SCO-6"
-      ],
-      "source": [
-        {
-          "label": "intake раунд 2 (O / Q20b)"
-        }
-      ]
-    },
-    {
-      "id": "INV-12",
-      "tag": "NEW",
-      "status": "draft",
-      "statement": "Agentic-first ≠ headless: у каждой роли есть и человеческий UI, и MCP/context-pack — над одним API.",
-      "rationale": "intake Q16: agentic-first не значит «без интерфейсов». Функциональная часть «через агента доступно всё, что через UI» — в FR-STU-6. Архитектурная часть «единый API под UI и MCP» — в ADR §5 (пометка для ADR, здесь не дублируется).",
-      "governs": [
-        "FR-STU-6"
-      ],
-      "source": [
-        {
-          "label": "intake раунд 1 (Q16)"
-        }
-      ]
-    }
+  "about": "Курс в новой модели — не монолит, а **шаблон + запуск + содержимое**. **Course** (шаблон): дисциплина/стек, программа этапов и заданий, базовый формат защит, шаблон kickoff. **Cohort** (запуск): календарь, координатор(ы) и команда курса, набор участников, зафиксированный свод правил, feature-флаги. **Stage** (этап/чекпоинт): окно дат, scope, набор правил с баллами, опциональный gate. **Task** (задание): дедлайн, тип проверяющего, баллы. **Team**: студенты + репозиторий + лид + ментор(ы). **DefenceSession**: любой формат защиты. Итог: Course → Cohort → Stages → Tasks/Defences, поверх — люди в ролях и команды, на выходе — сертификат + вклад в профиль.",
+  "nonGoals": [
+   "Поля сущностей, DTO, миграции, схема БД — в ADR / на этапе implementation.",
+   "Auth-механика и формат scope-строк — ADR §6.",
+   "Решение по монетизации — ADR §7.",
+   "UI/экраны как дизайн — функционал описан как поведение (но принцип «каждой роли UI + MCP» — INV-12).",
+   "Выбор LLM-провайдеров — per-actor, ADR §10.",
+   "Конкретные пороги («коммерческий опыт уровня X», «достаточное понимание») — калибровка координатора."
+  ],
+  "openQuestions": [
+   {
+    "q": "Self-driven vs default: как гарантировать, что self-driven — выбор команды, а не следствие нехватки менторов?",
+    "refs": "FR-MEN-4, FR-MEN-6"
+   },
+   {
+    "q": "Что считать «достаточным пониманием» на защите — единого порога нет. Нужен ли минимальный rubric?",
+    "refs": "FR-MEN-7"
+   },
+   {
+    "q": "Какой кодинг-агент проверяет PR и кто его держит.",
+    "refs": "FR-DEF-1, FR-AGT-4"
+   },
+   {
+    "q": "Что делать, если команда не прошла warm-up.",
+    "refs": "FR-DEF-7"
+   },
+   {
+    "q": "Cross-course градация (Junior/Mid/Senior).",
+    "refs": "FR-PRO-4, ADR §9"
+   },
+   {
+    "q": "Публичность по умолчанию профиля и Contribution-feed.",
+    "refs": "FR-PRO, ADR §9"
+   },
+   {
+    "q": "GDPR-удаление Person vs immutable Contribution — политика soft/anon/hard + фрикция.",
+    "refs": "FR-PRO-2, ADR §9"
+   },
+   {
+    "q": "Регулярные командные таски через весь курс (не только warm-up).",
+    "refs": "FR-DEF-7"
+   },
+   {
+    "q": "Роль баллов после AI — TrustSignal vs score.",
+    "refs": "FR-SCO-6"
+   },
+   {
+    "q": "Tenancy: общая мульти-тенант платформа vs изоляция per-course (БД/инфра/расширяемость). Гейтит publishing-scale и «свой тип проверки».",
+    "refs": "tenancy-decision-brief.md, ADR §3.2"
+   }
   ]
+ },
+ "roles": {
+  "coordinator": "Координатор",
+  "mentor": "Ментор",
+  "student": "Студент",
+  "agent": "Агент",
+  "jury": "Жюри",
+  "core": "Core team",
+  "hirer": "Работодатель"
+ },
+ "domains": {
+  "CRS": "Курс и набор",
+  "ENR": "Зачисление",
+  "MEN": "Менторинг",
+  "STU": "Студент",
+  "DEF": "Защиты",
+  "SCO": "Скоринг",
+  "CRD": "Координация",
+  "AGT": "Агенты",
+  "COM": "Коммуникация",
+  "PRO": "Профиль",
+  "FAIR": "Честность"
+ },
+ "frs": [
+  {
+   "id": "FR-CRS-1",
+   "domain": "CRS",
+   "tag": "Tandem",
+   "statement": "Координатор может создать набор из шаблона курса, задав календарь (даты старта, дедлайнов, защит, финала, закрытия).",
+   "rationale": "program-config. Сейчас Course смешивает шаблон и instance — ADR §3.2 требует разделить.",
+   "acceptance": "созданный набор имеет независимый календарь, не мутирующий шаблон.",
+   "source": [
+    {
+     "label": "Tandem: program-config"
+    },
+    {
+     "label": "ADR",
+     "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/rs-app-agentic-rearchitecture.md"
+    }
+   ],
+   "performs": [
+    "coordinator"
+   ],
+   "concerns": [
+    "student"
+   ],
+   "version": 1,
+   "status": "proposed",
+   "approvals": [],
+   "phase": [
+    0
+   ],
+   "crossCutting": false
+  },
+  {
+   "id": "FR-CRS-2",
+   "domain": "CRS",
+   "tag": "Tandem",
+   "statement": "Координатор может определить этапы набора, каждый со scope, окном дат, набором правил (тип/scope/баллы/params) и опциональным gate.",
+   "rationale": "Tandem: 7 чекпоинтов с типизированными rules.",
+   "acceptance": "этап с gate без баллов блокирует грейдинг, если gate не пройден (w6).",
+   "source": [
+    {
+     "label": "Tandem: 7 чекпоинтов"
+    }
+   ],
+   "performs": [
+    "coordinator"
+   ],
+   "concerns": [
+    "student"
+   ],
+   "version": 1,
+   "status": "proposed",
+   "approvals": [],
+   "phase": [
+    0
+   ],
+   "crossCutting": false
+  },
+  {
+   "id": "FR-CRS-3",
+   "domain": "CRS",
+   "tag": "Tandem",
+   "statement": "Координатор может включать/выключать модули набора через feature-флаги (teamDefence, mentorDefence, peerReview, diaryGrade, selfAssessment, awards).",
+   "rationale": "Tandem: program-config.features.",
+   "acceptance": "выключенный модуль не появляется ни в UI, ни в API-контексте студента.",
+   "source": [
+    {
+     "label": "Tandem: program-config.features"
+    }
+   ],
+   "performs": [
+    "coordinator"
+   ],
+   "concerns": [
+    "student"
+   ],
+   "version": 1,
+   "status": "proposed",
+   "approvals": [],
+   "phase": [
+    0
+   ],
+   "crossCutting": false
+  },
+  {
+   "id": "FR-CRS-4",
+   "domain": "CRS",
+   "tag": "Tandem",
+   "statement": "Система поддерживает разные типы правил оценивания и допускает `custom` без баллов как чек-маркер.",
+   "rationale": "Tandem.",
+   "acceptance": "новый тип правила добавляется конфигом, без правки ядра скоринга для существующих.",
+   "source": [
+    {
+     "label": "Tandem"
+    }
+   ],
+   "performs": [
+    "coordinator"
+   ],
+   "concerns": [
+    "student",
+    "agent"
+   ],
+   "version": 1,
+   "status": "proposed",
+   "approvals": [],
+   "phase": [
+    0
+   ],
+   "crossCutting": false
+  },
+  {
+   "id": "FR-CRS-5",
+   "domain": "CRS",
+   "tag": "NEW",
+   "statement": "Курс может быть индивидуальным (без командного финала) — тогда team/warm-up/jury-фазы не активируются.",
+   "rationale": "team-warmup §«когда не нужен».",
+   "acceptance": "индивидуальный набор проходит e2e без обязательной Team-сущности.",
+   "source": [
+    {
+     "label": "team-warmup-before-final",
+     "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/team-warmup-before-final.md"
+    }
+   ],
+   "performs": [
+    "coordinator"
+   ],
+   "concerns": [
+    "student"
+   ],
+   "version": 1,
+   "status": "draft",
+   "approvals": [],
+   "phase": [
+    0
+   ],
+   "crossCutting": false
+  },
+  {
+   "id": "FR-CRS-6",
+   "domain": "CRS",
+   "tag": "NEW",
+   "statement": "Координатор может разложить календарь когорты (FR-CRS-1) на набор датированных событий (дедлайны, защиты, слоты, финал, закрытие); каждое событие несёт пер-событийные напоминания.",
+   "rationale": "intake Q17 — календарь FR-CRS-1 был как набор дат, но не как события с напоминаниями; нужен явный слой «расписание = события».",
+   "acceptance": "у когорты есть события с датой и типом; напоминание порождается из события через FR-COM-1, не вручную; студент/ментор видят расписание своей когорты.",
+   "source": [
+    {
+     "label": "intake раунд 2 (Q17)"
+    }
+   ],
+   "performs": [
+    "coordinator"
+   ],
+   "concerns": [
+    "student",
+    "mentor"
+   ],
+   "version": 1,
+   "status": "draft",
+   "approvals": [],
+   "phase": [
+    0
+   ],
+   "crossCutting": false
+  },
+  {
+   "id": "FR-CRS-7",
+   "domain": "CRS",
+   "tag": "NEW",
+   "statement": "Координатор может изменить событие расписания (сдвиг даты, добавление); система фиксирует было/стало/причину и уведомляет затронутый scope (cohort/team/person).",
+   "rationale": "intake Q17 — поток изменения расписания (что/когда/кому) не был смоделирован; сужающие сдвиги ограничены инвариантом заморозки.",
+   "acceptance": "изменение оставляет аудит было/стало/причина; уведомление адресовано по scope; сужающий сдвиг (раньше дедлайн) отклоняется (FR-FAIR-2, FR-CRD-2).",
+   "source": [
+    {
+     "label": "intake раунд 2 (Q17)"
+    }
+   ],
+   "performs": [
+    "coordinator"
+   ],
+   "concerns": [
+    "student",
+    "mentor"
+   ],
+   "version": 1,
+   "status": "draft",
+   "approvals": [],
+   "phase": [],
+   "crossCutting": true
+  },
+  {
+   "id": "FR-ENR-0",
+   "domain": "ENR",
+   "tag": "NEW",
+   "statement": "Bootstrap идентичности: первый вход человека (GitHub OAuth) создаёт ровно одну Person; повторный вход того же внешнего идентификатора резолвится в ту же Person. Person появляется до любого CourseMembership.",
+   "rationale": "intake Q3 — нет отдельного FR на bootstrap идентичности (account → Person). UC-STU-1 шаг 1.",
+   "acceptance": "N входов одного GitHub-аккаунта → 1 Person; вход без зачисления уже создаёт Person.",
+   "source": [
+    {
+     "label": "intake раунд 1 (Q3)"
+    }
+   ],
+   "performs": [
+    "student",
+    "mentor"
+   ],
+   "concerns": [
+    "core"
+   ],
+   "version": 1,
+   "status": "draft",
+   "approvals": [],
+   "phase": [
+    1
+   ],
+   "crossCutting": false
+  },
+  {
+   "id": "FR-ENR-1",
+   "domain": "ENR",
+   "tag": "Tandem",
+   "statement": "Человек может зарегистрироваться в наборе как студент (самозапись) или быть зачислен координатором.",
+   "rationale": "Tandem.",
+   "acceptance": "появляется `CourseMembership(role=student)` для конкретной Cohort.",
+   "source": [
+    {
+     "label": "Tandem"
+    }
+   ],
+   "performs": [
+    "student",
+    "coordinator"
+   ],
+   "concerns": [],
+   "version": 1,
+   "status": "proposed",
+   "approvals": [],
+   "phase": [
+    1
+   ],
+   "crossCutting": false
+  },
+  {
+   "id": "FR-ENR-2",
+   "domain": "ENR",
+   "tag": "Tandem",
+   "statement": "Один человек может иметь разные роли в разных наборах одновременно (студент здесь, ментор там).",
+   "rationale": "ADR §3.2.",
+   "acceptance": "роль не глобальна; смена роли в одном наборе не трогает другой.",
+   "source": [
+    {
+     "label": "ADR",
+     "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/rs-app-agentic-rearchitecture.md"
+    }
+   ],
+   "performs": [
+    "student",
+    "mentor"
+   ],
+   "concerns": [
+    "coordinator"
+   ],
+   "version": 1,
+   "status": "proposed",
+   "approvals": [],
+   "phase": [],
+   "crossCutting": true
+  },
+  {
+   "id": "FR-ENR-3",
+   "domain": "ENR",
+   "tag": "Tandem",
+   "statement": "Координатор может формировать команды внутри набора и переназначать состав.",
+   "rationale": "Tandem: participants.json.",
+   "acceptance": "студент может перейти из команды в команду с сохранением истории (TeamMembership с периодом).",
+   "source": [
+    {
+     "label": "Tandem: participants.json"
+    }
+   ],
+   "performs": [
+    "coordinator"
+   ],
+   "concerns": [
+    "student"
+   ],
+   "version": 1,
+   "status": "proposed",
+   "approvals": [],
+   "phase": [
+    1,
+    3
+   ],
+   "crossCutting": false
+  },
+  {
+   "id": "FR-ENR-4",
+   "domain": "ENR",
+   "tag": "Tandem",
+   "statement": "Координатор может пометить участника как `dropped`/неактивного, исключив из активного скоринга и экспорта.",
+   "rationale": "Tandem: export исключает role=mentor и dropped=true.",
+   "acceptance": "dropped-студент не попадает в CSV активных и в health-метрики.",
+   "source": [
+    {
+     "label": "Tandem: export"
+    }
+   ],
+   "performs": [
+    "coordinator"
+   ],
+   "concerns": [
+    "student",
+    "agent"
+   ],
+   "version": 1,
+   "status": "proposed",
+   "approvals": [],
+   "phase": [
+    3,
+    8
+   ],
+   "crossCutting": false
+  },
+  {
+   "id": "FR-ENR-5",
+   "domain": "ENR",
+   "tag": "NEW",
+   "statement": "Координатор может фильтровать «зарегистрировался, но неактивен» от реальных участников (whitelist по факту первого вклада/баллов).",
+   "rationale": "Tandem-урок: 200+ сырых заявок vs активные.",
+   "acceptance": "список активных строится по сигналу вклада, не по факту регистрации.",
+   "source": [
+    {
+     "label": "Tandem: 200+ заявок vs активные"
+    }
+   ],
+   "performs": [
+    "coordinator"
+   ],
+   "concerns": [],
+   "version": 1,
+   "status": "draft",
+   "approvals": [],
+   "phase": [
+    1,
+    8
+   ],
+   "crossCutting": false
+  },
+  {
+   "id": "FR-ENR-6",
+   "domain": "ENR",
+   "tag": "NEW",
+   "statement": "Возвращающийся участник распознаётся как та же Person: при заявке в новую когорту видны прошлый профиль и роли, дубль не создаётся; повторная заявка в ту же когорту дедуплицируется.",
+   "rationale": "intake Q4 — модель «одна Person на много когорт» есть, но нет распознавания вернувшегося и дедупа заявок (200+ сырых заявок).",
+   "acceptance": "заявка человека с существующей Person связывается с ней; дубль-заявка в одну когорту сливается/отклоняется; прошлые роли видны.",
+   "source": [
+    {
+     "label": "intake раунд 1 (Q4)"
+    }
+   ],
+   "performs": [
+    "coordinator"
+   ],
+   "concerns": [
+    "student",
+    "mentor"
+   ],
+   "version": 1,
+   "status": "draft",
+   "approvals": [],
+   "phase": [
+    1
+   ],
+   "crossCutting": false
+  },
+  {
+   "id": "FR-ENR-7",
+   "domain": "ENR",
+   "tag": "NEW",
+   "statement": "Студенты могут собираться в команду самозаписью (создать команду, вступить/пригласить) в рамках, заданных координатором. Владелец сборки — конфигурируемая политика когорты: coordinator / self-service / hybrid.",
+   "rationale": "intake Q5 — Tandem делал только coordinator-режим (participants.json); самосборка студентами не покрыта.",
+   "acceptance": "в self-service/hybrid студент может создать команду и вступить; в hybrid команда неактивна до approve координатора; в coordinator самозапись недоступна.",
+   "source": [
+    {
+     "label": "intake раунд 1 (Q5)"
+    }
+   ],
+   "performs": [
+    "student",
+    "coordinator"
+   ],
+   "concerns": [
+    "student"
+   ],
+   "version": 1,
+   "status": "draft",
+   "approvals": [],
+   "phase": [
+    1
+   ],
+   "crossCutting": false
+  },
+  {
+   "id": "FR-ENR-8",
+   "domain": "ENR",
+   "tag": "NEW",
+   "statement": "У команды есть роль TeamLead (0..1 активный на команду). Назначение зависит от политики сборки: в coordinator-режиме назначает координатор; в self-service/hybrid создатель по умолчанию лид, роль передаётся. Лид может переименовать команду, менять состав до заморозки, представлять команду.",
+   "rationale": "intake Q6 — CLAUDE.md упоминает «лид» в Team без модели прав и назначения.",
+   "acceptance": "≤1 активный TeamLead на команду в любой момент; смена лида сохраняется в истории.",
+   "source": [
+    {
+     "label": "intake раунд 1 (Q6)"
+    }
+   ],
+   "performs": [
+    "student",
+    "coordinator"
+   ],
+   "concerns": [
+    "student"
+   ],
+   "version": 1,
+   "status": "draft",
+   "approvals": [],
+   "phase": [
+    1
+   ],
+   "crossCutting": false
+  },
+  {
+   "id": "FR-ENR-9",
+   "domain": "ENR",
+   "tag": "NEW",
+   "statement": "Управление waitlist: при закрытом наборе/исчерпанном capacity заявка попадает в waitlist с позицией; координатор видит список и порядок и может промотировать в активные при освобождении места (промоушен порождает CourseMembership без повторной регистрации).",
+   "rationale": "intake Q12 — нет FR на управление и просмотр waitlist; UC-STU-1 alt лишь упоминает.",
+   "acceptance": "waitlist упорядочен (FIFO по умолчанию); промоушен переводит Person из waitlist в active; освобождение места видно координатору.",
+   "source": [
+    {
+     "label": "intake раунд 1 (Q12)"
+    }
+   ],
+   "performs": [
+    "coordinator"
+   ],
+   "concerns": [
+    "student"
+   ],
+   "version": 1,
+   "status": "draft",
+   "approvals": [],
+   "phase": [
+    1
+   ],
+   "crossCutting": false
+  },
+  {
+   "id": "FR-ENR-10",
+   "domain": "ENR",
+   "tag": "NEW",
+   "statement": "Переименование команды: уполномоченный актор (TeamLead или координатор — по политике сборки) может сменить название; история имён сохраняется (текущее показывается, прошлые — в аудите); slug-история не ломает ссылки.",
+   "rationale": "intake Q22 — нет FR на переименование команды (кто вправе, сохраняется ли история).",
+   "acceptance": "смена имени не ломает существующие ссылки; прошлые имена доступны в аудите.",
+   "source": [
+    {
+     "label": "intake раунд 3 (Q22)"
+    }
+   ],
+   "performs": [
+    "student",
+    "coordinator"
+   ],
+   "concerns": [
+    "student"
+   ],
+   "version": 1,
+   "status": "draft",
+   "approvals": [],
+   "phase": [
+    1,
+    3
+   ],
+   "crossCutting": false
+  },
+  {
+   "id": "FR-ENR-11",
+   "domain": "ENR",
+   "tag": "NEW",
+   "statement": "Расформирование/разделение команды в середине когорты (конфликт): координатор может распустить или разделить команду. Индивидуальный вклад каждого студента остаётся за ним; командный артефакт обрабатывается по явному правилу (наследуется под-командой или архивируется); студенты переназначаются с сохранением TeamMembership-истории.",
+   "rationale": "intake Q21 — нет сценария разрешения конфликта (split/dissolution mid-cohort); team-warmup подтверждает, что команды реально конфликтуют.",
+   "acceptance": "после split у каждого студента сохранён его вклад, нет «осиротевших» баллов; команда уведомлена.",
+   "source": [
+    {
+     "label": "intake раунд 3 (Q21)"
+    }
+   ],
+   "performs": [
+    "coordinator"
+   ],
+   "concerns": [
+    "student"
+   ],
+   "version": 1,
+   "status": "draft",
+   "approvals": [],
+   "phase": [
+    3
+   ],
+   "crossCutting": false
+  },
+  {
+   "id": "FR-MEN-1",
+   "domain": "MEN",
+   "tag": "Tandem",
+   "statement": "Координатор может открыть набор менторов в пул **до** kickoff и принимать самозаписи.",
+   "rationale": "mentor-staffing-policy.",
+   "acceptance": "пул менторов существует как сущность до даты kickoff.",
+   "source": [
+    {
+     "label": "mentor-staffing-policy",
+     "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/mentor-staffing-policy.md"
+    }
+   ],
+   "performs": [
+    "coordinator"
+   ],
+   "concerns": [
+    "mentor"
+   ],
+   "version": 1,
+   "status": "proposed",
+   "approvals": [],
+   "phase": [
+    1
+   ],
+   "crossCutting": false
+  },
+  {
+   "id": "FR-MEN-2",
+   "domain": "MEN",
+   "tag": "NEW",
+   "statement": "Если есть capacity, ментор проходит онбординг: минимальные требования (опыт/стек/часы), briefing о роли (слушатель защит, не PR-ревьюер), соглашение об ожиданиях.",
+   "rationale": "mentor-onboarding-intent.",
+   "acceptance": "статус онбординга (с/без скрининга) виден в kickoff (FR-FAIR-1).",
+   "source": [
+    {
+     "label": "mentor-onboarding-intent",
+     "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/mentor-onboarding-intent.md"
+    }
+   ],
+   "performs": [
+    "coordinator",
+    "mentor"
+   ],
+   "concerns": [
+    "student"
+   ],
+   "version": 1,
+   "status": "draft",
+   "approvals": [],
+   "phase": [
+    1
+   ],
+   "crossCutting": false
+  },
+  {
+   "id": "FR-MEN-3",
+   "domain": "MEN",
+   "tag": "Tandem",
+   "statement": "Координатор может вести **резервный пул** `mentor-on-call` (≥2), не привязанный к командам.",
+   "rationale": "mentor-staffing-policy.",
+   "acceptance": "резервный ментор активируется к команде без переназначения всей структуры.",
+   "source": [
+    {
+     "label": "mentor-staffing-policy",
+     "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/mentor-staffing-policy.md"
+    }
+   ],
+   "performs": [
+    "coordinator"
+   ],
+   "concerns": [
+    "mentor",
+    "student"
+   ],
+   "version": 1,
+   "status": "proposed",
+   "approvals": [],
+   "phase": [
+    1,
+    3
+   ],
+   "crossCutting": false
+  },
+  {
+   "id": "FR-MEN-4",
+   "domain": "MEN",
+   "tag": "Tandem",
+   "statement": "При уходе ментора координатор может активировать резерв в течение SLA (7 дней) или явно перевести команду в `self-driven` с уведомлением.",
+   "rationale": "mentor-staffing-policy.",
+   "acceptance": "MentoringLink меняет статус (`transferred`/`self-driven`) с аудит-записью; команда уведомлена.",
+   "source": [
+    {
+     "label": "mentor-staffing-policy",
+     "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/mentor-staffing-policy.md"
+    }
+   ],
+   "performs": [
+    "coordinator"
+   ],
+   "concerns": [
+    "mentor",
+    "student"
+   ],
+   "version": 1,
+   "status": "proposed",
+   "approvals": [],
+   "phase": [
+    3
+   ],
+   "crossCutting": false
+  },
+  {
+   "id": "FR-MEN-5",
+   "domain": "MEN",
+   "tag": "Tandem",
+   "statement": "Координатор может привязать ментора/ментор-пару к команде через гибкую связь с policy: `dedicated` / `team-bound` / `rotating` / `cross-mentor`.",
+   "rationale": "ADR §3.3 MentoringLink; «команды ходят на ревью кросс-менторов».",
+   "acceptance": "одна команда может иметь primary-ментора **и** rotating-interviewer одновременно.",
+   "source": [
+    {
+     "label": "ADR",
+     "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/rs-app-agentic-rearchitecture.md"
+    }
+   ],
+   "performs": [
+    "coordinator"
+   ],
+   "concerns": [
+    "mentor",
+    "student"
+   ],
+   "version": 1,
+   "status": "proposed",
+   "approvals": [],
+   "phase": [
+    1,
+    3,
+    7
+   ],
+   "crossCutting": false
+  },
+  {
+   "id": "FR-MEN-6",
+   "domain": "MEN",
+   "tag": "Tandem",
+   "statement": "Перед стартом командного этапа система даёт координатору **staffing-gate**: «команд без ментора = 0» + резерв ≥2 + self-driven помечены явно.",
+   "rationale": "mentor-staffing-policy: дефект Q3.",
+   "acceptance": "gate показывает список команд без ментора; пустой список — обязательное условие старта этапа.",
+   "source": [
+    {
+     "label": "mentor-staffing-policy",
+     "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/mentor-staffing-policy.md"
+    }
+   ],
+   "performs": [
+    "coordinator"
+   ],
+   "concerns": [
+    "mentor",
+    "student"
+   ],
+   "version": 1,
+   "status": "proposed",
+   "approvals": [],
+   "phase": [
+    1
+   ],
+   "crossCutting": false
+  },
+  {
+   "id": "FR-MEN-7",
+   "domain": "MEN",
+   "tag": "Tandem",
+   "statement": "Ментор может проводить регулярные встречи (раз в 1–2 недели), где студенты по очереди рассказывают о работе, и выставлять оценку **за понимание** по итогам встречи.",
+   "rationale": "mentor-as-defence-listener.",
+   "acceptance": "оценка привязана к DefenceSession (встреча), не к PR.",
+   "source": [
+    {
+     "label": "mentor-as-defence-listener",
+     "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/mentor-as-defence-listener.md"
+    }
+   ],
+   "performs": [
+    "mentor"
+   ],
+   "concerns": [
+    "student"
+   ],
+   "version": 1,
+   "status": "proposed",
+   "approvals": [],
+   "phase": [
+    3
+   ],
+   "crossCutting": false
+  },
+  {
+   "id": "FR-MEN-8",
+   "domain": "MEN",
+   "tag": "Tandem",
+   "statement": "Ментор-пара может слушать обе свои команды, но защиту проводит другой ментор (анти-конфликт интересов).",
+   "rationale": "mentor-staffing-policy.",
+   "acceptance": "на DefenceSession reviewer ≠ primary-ментор для случая ментор-пары.",
+   "source": [
+    {
+     "label": "mentor-staffing-policy",
+     "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/mentor-staffing-policy.md"
+    }
+   ],
+   "performs": [
+    "mentor"
+   ],
+   "concerns": [
+    "student",
+    "coordinator"
+   ],
+   "version": 1,
+   "status": "proposed",
+   "approvals": [],
+   "phase": [
+    3,
+    7
+   ],
+   "crossCutting": false
+  },
+  {
+   "id": "FR-MEN-9",
+   "domain": "MEN",
+   "tag": "NEW",
+   "statement": "MentoringLink поддерживает кратность N менторов на одну команду. Среди менторов команды ровно один помечен primary, остальные — co-mentor. Студент видит всех менторов своей команды с ролью; каждый ментор видит, где он primary, где co.",
+   "rationale": "intake Q13 — текущая модель (FR-MEN-5/8) покрывала лишь обратную кратность «1 ментор на 2 команды».",
+   "acceptance": "команда может иметь ≥1 ментора при ровно 1 primary; отображение различает primary/co для студента и для ментора.",
+   "source": [
+    {
+     "label": "intake раунд 1 (Q13)"
+    }
+   ],
+   "performs": [
+    "coordinator"
+   ],
+   "concerns": [
+    "student",
+    "mentor"
+   ],
+   "version": 1,
+   "status": "draft",
+   "approvals": [],
+   "phase": [
+    1,
+    3
+   ],
+   "crossCutting": false
+  },
+  {
+   "id": "FR-MEN-10",
+   "domain": "MEN",
+   "tag": "NEW",
+   "statement": "Координатор выбирает стратегию распределения менторов: manual / random / random-with-constraints. При random-with-constraints распределение учитывает атрибуты матчинга (язык(и), предпочтения/исключения), если система их держит как данные Person.",
+   "rationale": "intake Q14 — FR-MEN-5 не задавал стратегию распределения и атрибуты матчинга.",
+   "acceptance": "manual = текущее ручное привязывание; random-with-constraints не назначает ментора, нарушающего жёсткое ограничение (нет общего языка).",
+   "source": [
+    {
+     "label": "intake раунд 1 (Q14)"
+    }
+   ],
+   "performs": [
+    "coordinator"
+   ],
+   "concerns": [
+    "mentor",
+    "student"
+   ],
+   "version": 1,
+   "status": "draft",
+   "approvals": [],
+   "phase": [
+    1
+   ],
+   "crossCutting": false
+  },
+  {
+   "id": "FR-MEN-11",
+   "domain": "MEN",
+   "tag": "NEW",
+   "statement": "Mentor-initiated открепление/обмен: ментор может предложить открепить студента/команду или обменяться студентами с другим ментором; изменение применяется после approve координатора, MentoringLink-история и уведомления сохраняются.",
+   "rationale": "intake Q15 — FR-MEN-4 покрывал только уход ментора, не его инициативу по откреплению/обмену.",
+   "acceptance": "открепление/обмен инициируется ментором, требует approve координатора, оставляет аудит-запись; обе стороны уведомлены.",
+   "source": [
+    {
+     "label": "intake раунд 1 (Q15)"
+    }
+   ],
+   "performs": [
+    "mentor",
+    "coordinator"
+   ],
+   "concerns": [
+    "student"
+   ],
+   "version": 1,
+   "status": "draft",
+   "approvals": [],
+   "phase": [
+    3
+   ],
+   "crossCutting": false
+  },
+  {
+   "id": "FR-STU-1",
+   "domain": "STU",
+   "tag": "Tandem",
+   "statement": "Студент может вести дневник в репозитории; система считает записи по **дате в имени файла**.",
+   "rationale": "Tandem: Diary Filename Policy.",
+   "acceptance": "файл без парсимой даты виден, но не считается в weekly scoring.",
+   "source": [
+    {
+     "label": "Tandem: Diary Filename Policy"
+    }
+   ],
+   "performs": [
+    "student"
+   ],
+   "concerns": [
+    "agent"
+   ],
+   "version": 1,
+   "status": "proposed",
+   "approvals": [],
+   "phase": [
+    3
+   ],
+   "crossCutting": false
+  },
+  {
+   "id": "FR-STU-2",
+   "domain": "STU",
+   "tag": "Tandem",
+   "statement": "Студент видит свой статус по каждому этапу: что зачтено, что ждут на этой неделе, ближайшие дедлайны.",
+   "rationale": "ADR §5.3 Context Pack me-as-student.",
+   "acceptance": "статус однозначно сверяется с зафиксированными правилами kickoff.",
+   "source": [
+    {
+     "label": "ADR",
+     "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/rs-app-agentic-rearchitecture.md"
+    }
+   ],
+   "performs": [
+    "student"
+   ],
+   "concerns": [
+    "coordinator"
+   ],
+   "version": 1,
+   "status": "proposed",
+   "approvals": [],
+   "phase": [
+    3
+   ],
+   "crossCutting": false
+  },
+  {
+   "id": "FR-STU-3",
+   "domain": "STU",
+   "tag": "Tandem",
+   "statement": "Студент может использовать AI; засчитывается код, **который студент может объяснить** на защите.",
+   "rationale": "mentor-as-defence-listener.",
+   "acceptance": "артефакт оценки — объяснение на DefenceSession, не наличие кода.",
+   "source": [
+    {
+     "label": "mentor-as-defence-listener",
+     "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/mentor-as-defence-listener.md"
+    }
+   ],
+   "performs": [
+    "student"
+   ],
+   "concerns": [
+    "mentor"
+   ],
+   "version": 1,
+   "status": "proposed",
+   "approvals": [],
+   "phase": [
+    3,
+    7
+   ],
+   "crossCutting": false
+  },
+  {
+   "id": "FR-STU-4",
+   "domain": "STU",
+   "tag": "Tandem",
+   "statement": "Команда может оформить финальный README с обязательными артефактами (about + демо-видео + proud-of, team, board, best PRs, meeting notes) и рабочим деплоем.",
+   "rationale": "Tandem: w7.",
+   "acceptance": "деплой доступен по ссылке из README; проверяемо детерминированно.",
+   "source": [
+    {
+     "label": "Tandem: w7"
+    }
+   ],
+   "performs": [
+    "student"
+   ],
+   "concerns": [
+    "coordinator",
+    "jury"
+   ],
+   "version": 1,
+   "status": "proposed",
+   "approvals": [],
+   "phase": [
+    5
+   ],
+   "crossCutting": false
+  },
+  {
+   "id": "FR-STU-5",
+   "domain": "STU",
+   "tag": "Tandem",
+   "statement": "Студент может сдать self-assessment; при недоступности main координатор может подложить override.",
+   "rationale": "Tandem: sa-overrides.",
+   "acceptance": "override берёт приоритет над клоном main для конкретного студента.",
+   "source": [
+    {
+     "label": "Tandem: sa-overrides"
+    }
+   ],
+   "performs": [
+    "student",
+    "coordinator"
+   ],
+   "concerns": [],
+   "version": 1,
+   "status": "proposed",
+   "approvals": [],
+   "phase": [
+    7
+   ],
+   "crossCutting": false
+  },
+  {
+   "id": "FR-STU-6",
+   "domain": "STU",
+   "tag": "NEW",
+   "statement": "Студент может подключить **личного агента** и через него делать всё, что делает через UI, в рамках своего scope.",
+   "rationale": "ADR §2.3, §5.2.",
+   "acceptance": "действие агента логируется как «от агента X студента Y».",
+   "source": [
+    {
+     "label": "ADR",
+     "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/rs-app-agentic-rearchitecture.md"
+    }
+   ],
+   "performs": [
+    "student"
+   ],
+   "concerns": [
+    "agent"
+   ],
+   "version": 1,
+   "status": "draft",
+   "approvals": [],
+   "phase": [],
+   "crossCutting": true
+  },
+  {
+   "id": "FR-DEF-0",
+   "domain": "DEF",
+   "tag": "NEW",
+   "statement": "У задания (CohortTask) есть назначенный тип проверяющего: agent (кодинг-агент) / mentor (защита-понимание) / peer / deterministic (код-валидатор). Студент видит, кто/что проверит каждый таск.",
+   "rationale": "intake Q10b — типы проверки существовали, но не как явное поле задания.",
+   "acceptance": "у CohortTask есть reviewer-тип; контекст студента показывает проверяющего для каждого таска; смена типа — конфигом до заморозки.",
+   "source": [
+    {
+     "label": "intake раунд 1 (Q10b)"
+    }
+   ],
+   "performs": [
+    "coordinator"
+   ],
+   "concerns": [
+    "student"
+   ],
+   "version": 1,
+   "status": "draft",
+   "approvals": [],
+   "phase": [
+    0
+   ],
+   "crossCutting": false
+  },
+  {
+   "id": "FR-DEF-1",
+   "domain": "DEF",
+   "tag": "Tandem",
+   "statement": "PR-ы по заданиям проверяет **кодинг-агент**; ментор в общем случае их не разбирает.",
+   "rationale": "mentor-as-defence-listener §3.",
+   "acceptance": "есть TaskReview, где reviewer = SystemActor.",
+   "source": [
+    {
+     "label": "mentor-as-defence-listener",
+     "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/mentor-as-defence-listener.md"
+    }
+   ],
+   "performs": [
+    "agent"
+   ],
+   "concerns": [
+    "mentor",
+    "student"
+   ],
+   "version": 1,
+   "status": "proposed",
+   "approvals": [],
+   "phase": [
+    3
+   ],
+   "crossCutting": false
+  },
+  {
+   "id": "FR-DEF-2",
+   "domain": "DEF",
+   "tag": "Tandem",
+   "statement": "Система поддерживает регулярную менторскую встречу как лёгкую защиту (понимание), отдельно от финальной.",
+   "rationale": "mentor-as-defence-listener.",
+   "acceptance": "два разных типа DefenceSession с разным весом.",
+   "source": [
+    {
+     "label": "mentor-as-defence-listener",
+     "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/mentor-as-defence-listener.md"
+    }
+   ],
+   "performs": [
+    "mentor"
+   ],
+   "concerns": [
+    "student"
+   ],
+   "version": 1,
+   "status": "proposed",
+   "approvals": [],
+   "phase": [
+    3
+   ],
+   "crossCutting": false
+  },
+  {
+   "id": "FR-DEF-3",
+   "domain": "DEF",
+   "tag": "Tandem",
+   "statement": "Координатор может назначить **один раунд peer-review** (студент↔студент); система гарантирует его **в календаре раньше** финальной защиты, зазор 3–7 дней.",
+   "rationale": "peer-review-precedes-defence.",
+   "acceptance": "валидатор календаря не даёт опубликовать kickoff, где peer-review позже финальной защиты.",
+   "source": [
+    {
+     "label": "peer-review-precedes-defence",
+     "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/peer-review-precedes-defence.md"
+    }
+   ],
+   "performs": [
+    "coordinator"
+   ],
+   "concerns": [
+    "student"
+   ],
+   "version": 1,
+   "status": "proposed",
+   "approvals": [],
+   "phase": [
+    6
+   ],
+   "crossCutting": false
+  },
+  {
+   "id": "FR-DEF-4",
+   "domain": "DEF",
+   "tag": "Tandem",
+   "statement": "Ментор может провести финальную менторскую защиту как стресс-тест (архитектура, trade-offs, острые вопросы) и выставить итог.",
+   "rationale": "peer-review-precedes-defence.",
+   "acceptance": "результат финальной защиты идёт в сертификацию (FR-SCO-4).",
+   "source": [
+    {
+     "label": "peer-review-precedes-defence",
+     "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/peer-review-precedes-defence.md"
+    }
+   ],
+   "performs": [
+    "mentor"
+   ],
+   "concerns": [
+    "student"
+   ],
+   "version": 1,
+   "status": "proposed",
+   "approvals": [],
+   "phase": [
+    7
+   ],
+   "crossCutting": false
+  },
+  {
+   "id": "FR-DEF-5",
+   "domain": "DEF",
+   "tag": "Tandem",
+   "statement": "Координатор может организовать командную защиту перед jury и cross-mentor-ротацию (студент за курс слышит 4–6 разных менторов).",
+   "rationale": "mentor-staffing-policy §ротация.",
+   "acceptance": "DefenceSession поддерживает participants с typed role (defender/listener/jury), reviewer ≠ primary.",
+   "source": [
+    {
+     "label": "mentor-staffing-policy",
+     "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/mentor-staffing-policy.md"
+    }
+   ],
+   "performs": [
+    "coordinator",
+    "jury"
+   ],
+   "concerns": [
+    "mentor",
+    "student"
+   ],
+   "version": 1,
+   "status": "proposed",
+   "approvals": [],
+   "phase": [
+    7
+   ],
+   "crossCutting": false
+  },
+  {
+   "id": "FR-DEF-6",
+   "domain": "DEF",
+   "tag": "Tandem",
+   "statement": "Если финальная защита — пара (jury + менторская подряд), peer-review ставится перед **первой** из них.",
+   "rationale": "peer-review-precedes-defence.",
+   "acceptance": "календарный валидатор считает «первую финальную» точкой отсчёта.",
+   "source": [
+    {
+     "label": "peer-review-precedes-defence",
+     "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/peer-review-precedes-defence.md"
+    }
+   ],
+   "performs": [
+    "coordinator"
+   ],
+   "concerns": [
+    "student"
+   ],
+   "version": 1,
+   "status": "proposed",
+   "approvals": [],
+   "phase": [
+    6
+   ],
+   "crossCutting": false
+  },
+  {
+   "id": "FR-DEF-7",
+   "domain": "DEF",
+   "tag": "Tandem",
+   "statement": "В курсе с командным финалом координатор может ввести обязательный **командный warm-up** (1–2 недели, процессный, балл символический) до старта финала.",
+   "rationale": "team-warmup-before-final.",
+   "acceptance": "в календаре между последним индивидуальным этапом и финалом стоит warm-up; артефакт собирается, даже если выпал один участник.",
+   "source": [
+    {
+     "label": "team-warmup-before-final",
+     "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/team-warmup-before-final.md"
+    }
+   ],
+   "performs": [
+    "coordinator"
+   ],
+   "concerns": [
+    "student"
+   ],
+   "version": 1,
+   "status": "proposed",
+   "approvals": [],
+   "phase": [
+    4
+   ],
+   "crossCutting": false
+  },
+  {
+   "id": "FR-DEF-8",
+   "domain": "DEF",
+   "tag": "NEW",
+   "statement": "Координатор может собрать панель жюри (JuryPanel, 3–6 человек) на финальные/командные защиты, с типизированными ролями участников.",
+   "rationale": "intake Q19 — FR-DEF-5 даёт jury-защиту, но состав панели как сущность (3–6, роли) не моделировался.",
+   "acceptance": "панель имеет состав 3–6; участник — typed role (jury/listener); reviewer ≠ primary-ментор защищающейся команды (ср. FR-MEN-8).",
+   "source": [
+    {
+     "label": "intake раунд 2 (Q19)"
+    }
+   ],
+   "performs": [
+    "coordinator"
+   ],
+   "concerns": [
+    "jury",
+    "student"
+   ],
+   "version": 1,
+   "status": "draft",
+   "approvals": [],
+   "phase": [
+    7
+   ],
+   "crossCutting": false
+  },
+  {
+   "id": "FR-DEF-9",
+   "domain": "DEF",
+   "tag": "NEW",
+   "statement": "Координатор (или агент-планировщик) может создать слот защиты (DefenceSlot) с временем и длительностью (напр. 90/120 мин) и назначить на него несколько команд; слот привязан к панели жюри или ревьюеру.",
+   "rationale": "intake Q19 — слот-расписание защит (длительность, несколько команд в слоте, назначение команд) не моделировалось.",
+   "acceptance": "слот имеет время/длительность и ≥1 команду; команда видит свой слот и панель/ревьюера (FR-COM-4); для одной команды слоты не пересекаются.",
+   "source": [
+    {
+     "label": "intake раунд 2 (Q19)"
+    }
+   ],
+   "performs": [
+    "coordinator"
+   ],
+   "concerns": [
+    "student",
+    "jury",
+    "mentor"
+   ],
+   "version": 1,
+   "status": "draft",
+   "approvals": [],
+   "phase": [
+    7
+   ],
+   "crossCutting": false
+  },
+  {
+   "id": "FR-SCO-1",
+   "domain": "SCO",
+   "tag": "Tandem",
+   "statement": "Система **детерминированно** считает баллы по правилам этапа (клон main, проверка deploy/ci/linter/issues/diary/testing/review).",
+   "rationale": "Tandem: COLLECT; «оценивает код, не LLM».",
+   "acceptance": "повторный прогон на тех же данных даёт тот же балл.",
+   "source": [
+    {
+     "label": "Tandem: COLLECT"
+    }
+   ],
+   "performs": [
+    "agent",
+    "coordinator"
+   ],
+   "concerns": [
+    "student"
+   ],
+   "version": 1,
+   "status": "proposed",
+   "approvals": [],
+   "phase": [
+    3,
+    8
+   ],
+   "crossCutting": false
+  },
+  {
+   "id": "FR-SCO-2",
+   "domain": "SCO",
+   "tag": "Tandem",
+   "statement": "Дневник может оцениваться по ladder (0/20/60/80/100): уровни 0–60 детерминированно, 80/100 — через **LLM-binary** вопросы.",
+   "rationale": "Tandem: w6 v2-ladder.",
+   "acceptance": "код определяет 0/20/60; LLM только апгрейдит до 80/100.",
+   "source": [
+    {
+     "label": "Tandem: w6 v2-ladder"
+    }
+   ],
+   "performs": [
+    "agent",
+    "coordinator"
+   ],
+   "concerns": [
+    "student"
+   ],
+   "version": 1,
+   "status": "proposed",
+   "approvals": [],
+   "phase": [
+    8
+   ],
+   "crossCutting": false
+  },
+  {
+   "id": "FR-SCO-3",
+   "domain": "SCO",
+   "tag": "Tandem",
+   "statement": "Координатор может экспортировать баллы по чекпоинтам во внешний учёт (RS App / CSV `GitHub,Score`), только активные студенты.",
+   "rationale": "Tandem: export-scores-csv.",
+   "acceptance": "экспорт исключает role=mentor и dropped=true.",
+   "source": [
+    {
+     "label": "Tandem: export-scores-csv"
+    }
+   ],
+   "performs": [
+    "coordinator"
+   ],
+   "concerns": [
+    "student"
+   ],
+   "version": 1,
+   "status": "proposed",
+   "approvals": [],
+   "phase": [
+    8
+   ],
+   "crossCutting": false
+  },
+  {
+   "id": "FR-SCO-4",
+   "domain": "SCO",
+   "tag": "Tandem",
+   "statement": "Студент и координатор могут однозначно определить статус сертификата по зафиксированным критериям (числовой порог ИЛИ бинарный чек-лист).",
+   "rationale": "lock-rules-at-kickoff §1.",
+   "acceptance": "статус выводится только из данных + правил kickoff.",
+   "source": [
+    {
+     "label": "lock-rules-at-kickoff",
+     "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/lock-rules-at-kickoff.md"
+    }
+   ],
+   "performs": [
+    "student",
+    "coordinator"
+   ],
+   "concerns": [],
+   "version": 1,
+   "status": "proposed",
+   "approvals": [],
+   "phase": [
+    8
+   ],
+   "crossCutting": false
+  },
+  {
+   "id": "FR-SCO-5",
+   "domain": "SCO",
+   "tag": "Tandem",
+   "statement": "Координатор может объявить awards/номинации с **полным списком условий заранее**; добавлять номинации можно (расширение), менять условия существующей — нельзя.",
+   "rationale": "lock-rules-at-kickoff §2 + streamer-condition.",
+   "acceptance": "изменение условия существующей номинации после старта отклоняется.",
+   "source": [
+    {
+     "label": "lock-rules-at-kickoff",
+     "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/lock-rules-at-kickoff.md"
+    }
+   ],
+   "performs": [
+    "coordinator"
+   ],
+   "concerns": [
+    "student"
+   ],
+   "version": 1,
+   "status": "proposed",
+   "approvals": [],
+   "phase": [
+    0,
+    8
+   ],
+   "crossCutting": false
+  },
+  {
+   "id": "FR-SCO-6",
+   "domain": "SCO",
+   "tag": "Open",
+   "statement": "Роль баллов после AI пересматривается (TrustSignal вместо лидерборда).",
+   "rationale": "score-philosophy-after-ai (open ADR). Фиксируется как зависимость.",
+   "acceptance": "",
+   "source": [
+    {
+     "label": "score-philosophy-after-ai",
+     "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/score-philosophy-after-ai.md"
+    }
+   ],
+   "performs": [
+    "coordinator"
+   ],
+   "concerns": [
+    "student"
+   ],
+   "version": 1,
+   "status": "draft",
+   "approvals": [],
+   "phase": [],
+   "crossCutting": true
+  },
+  {
+   "id": "FR-CRD-0",
+   "domain": "CRD",
+   "tag": "NEW",
+   "statement": "Core team может назначить/снять координатора на когорту явным актом (грант роли coordinator со scope когорты).",
+   "rationale": "intake Q9 — §2 говорит «назначается core team», но явного FR/UC на акт назначения не было.",
+   "acceptance": "назначение = AccessGrant(role=coordinator, scope=cohort); снятие = expires_at=now(); до назначения у когорты нет владельца-координатора.",
+   "source": [
+    {
+     "label": "intake раунд 1 (Q9)"
+    }
+   ],
+   "performs": [
+    "core"
+   ],
+   "concerns": [
+    "coordinator"
+   ],
+   "version": 1,
+   "status": "draft",
+   "approvals": [],
+   "phase": [
+    0
+   ],
+   "crossCutting": false
+  },
+  {
+   "id": "FR-CRD-1",
+   "domain": "CRD",
+   "tag": "Tandem",
+   "statement": "Координатор видит **health-check набора**: кто из менторов пропал, какие команды без активности, top-проблемы.",
+   "rationale": "ADR §5.3 Context Pack me-as-coordinator; Tandem: healthcheck.",
+   "acceptance": "один экран/контекст отвечает «что требует внимания сегодня».",
+   "source": [
+    {
+     "label": "ADR",
+     "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/rs-app-agentic-rearchitecture.md"
+    },
+    {
+     "label": "Tandem: healthcheck"
+    }
+   ],
+   "performs": [
+    "coordinator"
+   ],
+   "concerns": [
+    "mentor"
+   ],
+   "version": 1,
+   "status": "proposed",
+   "approvals": [],
+   "phase": [],
+   "crossCutting": true
+  },
+  {
+   "id": "FR-CRD-2",
+   "domain": "CRD",
+   "tag": "Tandem",
+   "statement": "Координатор может делать **расширения в пользу студента** публично (мягче дедлайн, доп. время) с записью «было/стало/причина/с даты».",
+   "rationale": "lock-rules-at-kickoff §3.",
+   "acceptance": "сужение правил по ходу набора запрещено.",
+   "source": [
+    {
+     "label": "lock-rules-at-kickoff",
+     "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/lock-rules-at-kickoff.md"
+    }
+   ],
+   "performs": [
+    "coordinator"
+   ],
+   "concerns": [
+    "student"
+   ],
+   "version": 1,
+   "status": "proposed",
+   "approvals": [],
+   "phase": [],
+   "crossCutting": true
+  },
+  {
+   "id": "FR-CRD-3",
+   "domain": "CRD",
+   "tag": "Tandem",
+   "statement": "Координатор может рассылать объявления набору/команде/студенту.",
+   "rationale": "Tandem.",
+   "acceptance": "объявление адресуемо по scope (cohort/team/person).",
+   "source": [
+    {
+     "label": "Tandem"
+    }
+   ],
+   "performs": [
+    "coordinator"
+   ],
+   "concerns": [
+    "student",
+    "mentor"
+   ],
+   "version": 1,
+   "status": "proposed",
+   "approvals": [],
+   "phase": [],
+   "crossCutting": true
+  },
+  {
+   "id": "FR-CRD-4",
+   "domain": "CRD",
+   "tag": "Tandem",
+   "statement": "Координатор может перезапускать сбор данных по **одной команде/студенту** (targeted rerun), не делая полный sweep.",
+   "rationale": "Tandem-урок: late-submission targeted rerun.",
+   "acceptance": "`--team`-режим обновляет инкрементально, не затирая остальных.",
+   "source": [
+    {
+     "label": "Tandem: late-submission targeted rerun"
+    }
+   ],
+   "performs": [
+    "coordinator",
+    "agent"
+   ],
+   "concerns": [
+    "student"
+   ],
+   "version": 1,
+   "status": "proposed",
+   "approvals": [],
+   "phase": [
+    3,
+    8
+   ],
+   "crossCutting": false
+  },
+  {
+   "id": "FR-CRD-5",
+   "domain": "CRD",
+   "tag": "Tandem",
+   "statement": "Координатор может зарегистрировать **CourseAgent** со scope, ограниченным своим набором.",
+   "rationale": "ADR §3.4.",
+   "acceptance": "scope агента не выходит за пределы Cohort.",
+   "source": [
+    {
+     "label": "ADR",
+     "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/rs-app-agentic-rearchitecture.md"
+    }
+   ],
+   "performs": [
+    "coordinator"
+   ],
+   "concerns": [
+    "agent"
+   ],
+   "version": 1,
+   "status": "proposed",
+   "approvals": [],
+   "phase": [
+    0
+   ],
+   "crossCutting": false
+  },
+  {
+   "id": "FR-CRD-6",
+   "domain": "CRD",
+   "tag": "Tandem",
+   "statement": "Координатор может назначать/снимать роли в наборе (mentor, jury, helper) грантами с истечением.",
+   "rationale": "ADR §6.3 AccessGrant.",
+   "acceptance": "снятие роли = `expires_at=now()`, мгновенно.",
+   "source": [
+    {
+     "label": "ADR",
+     "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/rs-app-agentic-rearchitecture.md"
+    }
+   ],
+   "performs": [
+    "coordinator"
+   ],
+   "concerns": [
+    "mentor",
+    "jury"
+   ],
+   "version": 1,
+   "status": "proposed",
+   "approvals": [],
+   "phase": [],
+   "crossCutting": true
+  },
+  {
+   "id": "FR-CRD-7",
+   "domain": "CRD",
+   "tag": "Tandem",
+   "statement": "Координатор может закрыть набор; Contribution сохраняются, временные связи истекают.",
+   "rationale": "ADR §9.",
+   "acceptance": "после закрытия профили сохраняют вклад; активные гранты по этому набору истекают.",
+   "source": [
+    {
+     "label": "ADR",
+     "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/rs-app-agentic-rearchitecture.md"
+    }
+   ],
+   "performs": [
+    "coordinator"
+   ],
+   "concerns": [
+    "student",
+    "mentor"
+   ],
+   "version": 1,
+   "status": "proposed",
+   "approvals": [],
+   "phase": [
+    9
+   ],
+   "crossCutting": false
+  },
+  {
+   "id": "FR-AGT-1",
+   "domain": "AGT",
+   "tag": "Tandem",
+   "statement": "Любой агент действует под собственной identity (SystemActor) с явным scope и owner-Person; **не под фейковым GitHub-аккаунтом**.",
+   "rationale": "ADR §0, §3.4.",
+   "acceptance": "запрос агента отличим в аудите от запроса человека.",
+   "source": [
+    {
+     "label": "ADR",
+     "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/rs-app-agentic-rearchitecture.md"
+    }
+   ],
+   "performs": [
+    "agent"
+   ],
+   "concerns": [
+    "student",
+    "coordinator",
+    "core"
+   ],
+   "version": 1,
+   "status": "proposed",
+   "approvals": [],
+   "phase": [],
+   "crossCutting": true
+  },
+  {
+   "id": "FR-AGT-2",
+   "domain": "AGT",
+   "tag": "Tandem",
+   "statement": "Agent Dementor может читать активность студентов набора и переводить статус active→inactive + слать уведомления; **не может** трогать баллы или удалять курс.",
+   "rationale": "ADR §3.4.",
+   "acceptance": "попытка `write:score`/`delete:cohort` отклоняется на уровне scope.",
+   "source": [
+    {
+     "label": "ADR",
+     "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/rs-app-agentic-rearchitecture.md"
+    }
+   ],
+   "performs": [
+    "agent"
+   ],
+   "concerns": [
+    "student",
+    "coordinator"
+   ],
+   "version": 1,
+   "status": "proposed",
+   "approvals": [],
+   "phase": [
+    3
+   ],
+   "crossCutting": false
+  },
+  {
+   "id": "FR-AGT-3",
+   "domain": "AGT",
+   "tag": "Tandem",
+   "statement": "Core team может регистрировать CoreAgent (Dementor, collector/Скаут, narrator/Перо) с глобальным scope; расширение scope сверх стандартного требует одобрения второго core-member.",
+   "rationale": "ADR §6.2.",
+   "acceptance": "регистрация с нестандартным scope требует двойного подтверждения.",
+   "source": [
+    {
+     "label": "ADR",
+     "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/rs-app-agentic-rearchitecture.md"
+    }
+   ],
+   "performs": [
+    "core"
+   ],
+   "concerns": [
+    "agent"
+   ],
+   "version": 1,
+   "status": "proposed",
+   "approvals": [],
+   "phase": [],
+   "crossCutting": true
+  },
+  {
+   "id": "FR-AGT-4",
+   "domain": "AGT",
+   "tag": "Tandem",
+   "statement": "Collector-агент может детерминированно клонировать main и считать чекпоинты (роль COLLECT/Статист).",
+   "rationale": "Tandem.",
+   "acceptance": "агент-collector — обычный SystemActor со scope чтения репозиториев + записи submissions.",
+   "source": [
+    {
+     "label": "Tandem"
+    }
+   ],
+   "performs": [
+    "agent"
+   ],
+   "concerns": [
+    "coordinator",
+    "student"
+   ],
+   "version": 1,
+   "status": "proposed",
+   "approvals": [],
+   "phase": [
+    3,
+    8
+   ],
+   "crossCutting": false
+  },
+  {
+   "id": "FR-AGT-5",
+   "domain": "AGT",
+   "tag": "Tandem",
+   "statement": "Narrator-агент (Tandi/Перо) может читать дневники и публиковать тексты-наблюдения; **не ставит баллы**.",
+   "rationale": "Tandem: «Tandi — наблюдатель, не проверяющий».",
+   "acceptance": "narrator не имеет scope записи в score.",
+   "source": [
+    {
+     "label": "Tandem: Tandi — наблюдатель"
+    }
+   ],
+   "performs": [
+    "agent"
+   ],
+   "concerns": [
+    "student"
+   ],
+   "version": 1,
+   "status": "proposed",
+   "approvals": [],
+   "phase": [
+    3
+   ],
+   "crossCutting": false
+  },
+  {
+   "id": "FR-AGT-6",
+   "domain": "AGT",
+   "tag": "Tandem",
+   "statement": "Агент-новичок может запросить «что я могу прямо сейчас» (`list_my_capabilities`) и получить контракт по своему scope.",
+   "rationale": "ADR §5.2.",
+   "acceptance": "ответ зависит от scope текущего токена.",
+   "source": [
+    {
+     "label": "ADR",
+     "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/rs-app-agentic-rearchitecture.md"
+    }
+   ],
+   "performs": [
+    "agent"
+   ],
+   "concerns": [],
+   "version": 1,
+   "status": "proposed",
+   "approvals": [],
+   "phase": [],
+   "crossCutting": true
+  },
+  {
+   "id": "FR-AGT-7",
+   "domain": "AGT",
+   "tag": "NEW",
+   "statement": "Система ограничивает регистрацию агентов одним Person (rate-limit + минимальный TrustSignal-порог) против спама.",
+   "rationale": "ADR §9.",
+   "acceptance": "превышение лимита регистраций отклоняется.",
+   "source": [
+    {
+     "label": "ADR",
+     "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/rs-app-agentic-rearchitecture.md"
+    }
+   ],
+   "performs": [
+    "core"
+   ],
+   "concerns": [
+    "coordinator",
+    "student"
+   ],
+   "version": 1,
+   "status": "draft",
+   "approvals": [],
+   "phase": [],
+   "crossCutting": true
+  },
+  {
+   "id": "FR-AGT-8",
+   "domain": "AGT",
+   "tag": "NEW",
+   "statement": "Координатор может зарегистрировать агента-планировщика (CourseAgent со scope расписания), который строит/предлагает расписание защит и назначение команд на слоты; не ставит баллы и финализирует в рамках scope или с approve координатора.",
+   "rationale": "intake Q19 — «хорошо бы это мог делать AI-агент (Claude Code)»: планировщик как CourseAgent со scope расписания.",
+   "acceptance": "scope агента ограничен расписанием когорты (FR-CRD-5); попытка write:score отклоняется (как FR-AGT-2); предложенное расписание применяется по правилам scope.",
+   "source": [
+    {
+     "label": "intake раунд 2 (Q19)"
+    }
+   ],
+   "performs": [
+    "agent"
+   ],
+   "concerns": [
+    "coordinator"
+   ],
+   "version": 1,
+   "status": "draft",
+   "approvals": [],
+   "phase": [
+    7
+   ],
+   "crossCutting": false
+  },
+  {
+   "id": "FR-COM-1",
+   "domain": "COM",
+   "tag": "Tandem",
+   "statement": "Студент/ментор/команда получают уведомления о значимых событиях (дедлайн, защита, изменение-расширение правил, фидбек).",
+   "rationale": "Tandem.",
+   "acceptance": "уведомление порождается из Activity-листенера, не вручную.",
+   "source": [
+    {
+     "label": "Tandem"
+    }
+   ],
+   "performs": [
+    "agent"
+   ],
+   "concerns": [
+    "student",
+    "mentor"
+   ],
+   "version": 1,
+   "status": "proposed",
+   "approvals": [],
+   "phase": [],
+   "crossCutting": true
+  },
+  {
+   "id": "FR-COM-2",
+   "domain": "COM",
+   "tag": "Tandem",
+   "statement": "Любой student-visible статус («исправлено», «зачтено») публикуется **после** того, как изменение реально применено.",
+   "rationale": "Tandem session-protocol: deploy first, comment second.",
+   "acceptance": "комментарий «fixed» не уходит раньше, чем фикс виден студенту.",
+   "source": [
+    {
+     "label": "Tandem: session-protocol"
+    }
+   ],
+   "performs": [
+    "coordinator",
+    "agent"
+   ],
+   "concerns": [
+    "student"
+   ],
+   "version": 1,
+   "status": "proposed",
+   "approvals": [],
+   "phase": [],
+   "crossCutting": true
+  },
+  {
+   "id": "FR-COM-3",
+   "domain": "COM",
+   "tag": "NEW",
+   "statement": "Член комьюнити может подписаться на набор/человека (CommunityFollow) и получать feed «что нового».",
+   "rationale": "ADR §3.3, §3.5.",
+   "acceptance": "feed строится из Activity по подпискам.",
+   "source": [
+    {
+     "label": "ADR",
+     "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/rs-app-agentic-rearchitecture.md"
+    }
+   ],
+   "performs": [
+    "student",
+    "jury"
+   ],
+   "concerns": [],
+   "version": 1,
+   "status": "draft",
+   "approvals": [],
+   "phase": [],
+   "crossCutting": true
+  },
+  {
+   "id": "FR-COM-4",
+   "domain": "COM",
+   "tag": "NEW",
+   "statement": "Видимость контактов: студент видит ментора(ов) своей команды и канал связи; при ротации видит, кто его ревьюер на текущей неделе/сессии и как с ним связаться / где сессия.",
+   "rationale": "intake Q7, Q8 — видимость контактов ментор↔студент и спринт-ревьюера недели не была смоделирована.",
+   "acceptance": "контекст студента включает текущего(их) ментора(ов) + ревьюера ближайшей защиты с каналом связи; при ротации значение меняется по календарю.",
+   "source": [
+    {
+     "label": "intake раунд 1 (Q7,Q8)"
+    }
+   ],
+   "performs": [
+    "student"
+   ],
+   "concerns": [
+    "mentor"
+   ],
+   "version": 1,
+   "status": "draft",
+   "approvals": [],
+   "phase": [
+    3
+   ],
+   "crossCutting": false
+  },
+  {
+   "id": "FR-PRO-1",
+   "domain": "PRO",
+   "tag": "Tandem",
+   "statement": "Профиль агрегирует Contribution из всех наборов/ролей (не только последняя).",
+   "rationale": "ADR §2.1–2.2.",
+   "acceptance": "профиль показывает вклад за несколько курсов и ролей.",
+   "source": [
+    {
+     "label": "ADR",
+     "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/rs-app-agentic-rearchitecture.md"
+    }
+   ],
+   "performs": [
+    "student"
+   ],
+   "concerns": [
+    "hirer",
+    "coordinator"
+   ],
+   "version": 1,
+   "status": "proposed",
+   "approvals": [],
+   "phase": [],
+   "crossCutting": true
+  },
+  {
+   "id": "FR-PRO-2",
+   "domain": "PRO",
+   "tag": "Tandem",
+   "statement": "Contribution immutable и переживает закрытие набора и смену роли.",
+   "rationale": "ADR §3.1.",
+   "acceptance": "закрытие cohort не удаляет Contribution.",
+   "source": [
+    {
+     "label": "ADR",
+     "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/rs-app-agentic-rearchitecture.md"
+    }
+   ],
+   "performs": [
+    "student"
+   ],
+   "concerns": [],
+   "version": 1,
+   "status": "proposed",
+   "approvals": [],
+   "phase": [],
+   "crossCutting": true
+  },
+  {
+   "id": "FR-PRO-3",
+   "domain": "PRO",
+   "tag": "Tandem",
+   "statement": "Человек может получать Endorsement от другого человека в контексте.",
+   "rationale": "ADR §3.1.",
+   "acceptance": "Endorsement — факт, не балл; виден в профиле.",
+   "source": [
+    {
+     "label": "ADR",
+     "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/rs-app-agentic-rearchitecture.md"
+    }
+   ],
+   "performs": [
+    "student",
+    "mentor",
+    "coordinator"
+   ],
+   "concerns": [],
+   "version": 1,
+   "status": "proposed",
+   "approvals": [],
+   "phase": [],
+   "crossCutting": true
+  },
+  {
+   "id": "FR-PRO-4",
+   "domain": "PRO",
+   "tag": "NEW",
+   "statement": "При переходе между курсами Contribution-история переносится автоматически (одна Person).",
+   "rationale": "ADR §9.",
+   "acceptance": "новый набор видит прошлый вклад той же Person.",
+   "source": [
+    {
+     "label": "ADR",
+     "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/rs-app-agentic-rearchitecture.md"
+    }
+   ],
+   "performs": [
+    "student"
+   ],
+   "concerns": [
+    "coordinator"
+   ],
+   "version": 1,
+   "status": "draft",
+   "approvals": [],
+   "phase": [],
+   "crossCutting": true
+  },
+  {
+   "id": "FR-FAIR-1",
+   "domain": "FAIR",
+   "tag": "Tandem",
+   "statement": "К моменту kickoff зафиксированы и опубликованы 5 секций: критерии сертификата, бенефиты (или «нет бенефитов»), защиты, scope этапов, календарь. Студент сверяет статус, читая **только** kickoff.",
+   "rationale": "lock-rules-at-kickoff.",
+   "acceptance": "публикация kickoff проходит чек-лист из 5 пунктов.",
+   "source": [
+    {
+     "label": "lock-rules-at-kickoff",
+     "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/lock-rules-at-kickoff.md"
+    }
+   ],
+   "performs": [
+    "coordinator"
+   ],
+   "concerns": [
+    "student"
+   ],
+   "version": 1,
+   "status": "proposed",
+   "approvals": [],
+   "phase": [
+    2
+   ],
+   "crossCutting": false
+  },
+  {
+   "id": "FR-FAIR-2",
+   "domain": "FAIR",
+   "tag": "Tandem",
+   "statement": "После старта набора эти секции **read-only**; изменения только в сторону расширения для студента и только публично; сужения — со следующего набора.",
+   "rationale": "lock-rules-at-kickoff.",
+   "acceptance": "система/процесс не допускает сужающую правку текущего набора.",
+   "source": [
+    {
+     "label": "lock-rules-at-kickoff",
+     "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/lock-rules-at-kickoff.md"
+    }
+   ],
+   "performs": [
+    "coordinator"
+   ],
+   "concerns": [
+    "student"
+   ],
+   "version": 1,
+   "status": "proposed",
+   "approvals": [],
+   "phase": [],
+   "crossCutting": true
+  },
+  {
+   "id": "FR-FAIR-3",
+   "domain": "FAIR",
+   "tag": "Tandem",
+   "statement": "Если правило признано сломанным (травмирует/нечестно), координатор обязан признать и **компенсировать в текущем наборе**.",
+   "rationale": "lock-rules-at-kickoff §ловушки.",
+   "acceptance": "есть путь «исправить в пользу студента сейчас».",
+   "source": [
+    {
+     "label": "lock-rules-at-kickoff",
+     "url": "https://github.com/rolling-scopes/wiki/blob/main/wiki/decisions/lock-rules-at-kickoff.md"
+    }
+   ],
+   "performs": [
+    "coordinator"
+   ],
+   "concerns": [
+    "student"
+   ],
+   "version": 1,
+   "status": "proposed",
+   "approvals": [],
+   "phase": [],
+   "crossCutting": true
+  },
+  {
+   "id": "FR-FAIR-4",
+   "domain": "FAIR",
+   "tag": "Tandem",
+   "statement": "Видимые противоречивые сигналы (красный ✗ или мёртвая ссылка рядом с максимальным баллом) не показываются студенту: блок скрывается, а не «объясняется».",
+   "rationale": "Tandem feedback: no contradiction signals.",
+   "acceptance": "при максимальном балле провальные под-маркеры не рендерятся.",
+   "source": [
+    {
+     "label": "Tandem: no contradiction signals"
+    }
+   ],
+   "performs": [
+    "coordinator"
+   ],
+   "concerns": [
+    "student"
+   ],
+   "version": 1,
+   "status": "proposed",
+   "approvals": [],
+   "phase": [],
+   "crossCutting": true
+  },
+  {
+   "id": "FR-STU-7",
+   "domain": "STU",
+   "tag": "NEW",
+   "statement": "Студент может вести дневник в приложении курса (вход GitHub OAuth, identity = githubId): структурированные слоты «что сделано / какие проблемы / что выучил(а)» + необязательный «вопрос дня», серверные метки времени, автосохранение. Для repo-курсов остаётся FR-STU-1; выбор носителя — per-course.",
+   "rationale": "Git-интерфейс дневника систематически путал студентов (имена файлов, ветки — GitFlow-инцидент Angular); свой интерфейс даёт контроль UX, честные даты и структурированное сырьё для scan-шага.",
+   "acceptance": "запись создаётся/редактируется без git; дата — серверная; слоты сохраняются раздельно; identity совпадает с githubId в rs-app.",
+   "source": [
+    {
+     "label": "ai-course intake 2026-07 (§4)"
+    },
+    {
+     "label": "решение Воробья 2026-07-17"
+    }
+   ],
+   "performs": [
+    "student"
+   ],
+   "concerns": [
+    "agent",
+    "coordinator"
+   ],
+   "version": 1,
+   "status": "draft",
+   "approvals": [],
+   "phase": [
+    3
+   ],
+   "crossCutting": false
+  },
+  {
+   "id": "FR-STU-8",
+   "domain": "STU",
+   "tag": "NEW",
+   "statement": "Модель приватности дневника — «открытый статус-отчёт»: сырые записи видят narrator-агент и координаторы, любая запись может быть процитирована в выпуске, per-entry тумблера приватности нет. До первой записи студент проходит onboarding (зачем; кто читает; правило «своими словами») и даёт одно явное согласие («Принимаю»).",
+   "rationale": "Тумблер приватности → все пишут приватно → журналист ломается. Понятность правил = половина согласия (ретро Tandem). Правило «своими словами»: цитируем студента, не его ассистента.",
+   "acceptance": "до первой записи показан onboarding с фиксацией согласия; на экране записи — постоянная строка о публичности; текст правил доступен повторно.",
+   "source": [
+    {
+     "label": "ai-course intake 2026-07 (FR-6, §4)"
+    },
+    {
+     "label": "решение Воробья 2026-07-15"
+    }
+   ],
+   "performs": [
+    "student",
+    "coordinator"
+   ],
+   "concerns": [
+    "agent"
+   ],
+   "version": 1,
+   "status": "draft",
+   "approvals": [],
+   "phase": [
+    2,
+    3
+   ],
+   "crossCutting": false
+  },
+  {
+   "id": "FR-STU-9",
+   "domain": "STU",
+   "tag": "NEW",
+   "statement": "Narrator-агент отвечает студенту личным письмом ровно раз в неделю (квитанция с конкретикой из его записей, ссылка на выпуск). Это не чат: UI явно управляет ожиданием («следующее письмо — в воскресенье»).",
+   "rationale": "Адресат превращает дневник из отчёта в переписку (главная мотивация писать), но риалтайм-диалог не обещаем — обещание должно быть выполнимым по цене и вниманию.",
+   "acceptance": "≤1 письма в неделю на студента; письмо ссылается на факты из записей; UI не предлагает ответить.",
+   "source": [
+    {
+     "label": "ai-course intake 2026-07 (§4)"
+    },
+    {
+     "label": "решение Воробья 2026-07-15"
+    }
+   ],
+   "performs": [
+    "agent"
+   ],
+   "concerns": [
+    "student"
+   ],
+   "version": 1,
+   "status": "draft",
+   "approvals": [],
+   "phase": [
+    3
+   ],
+   "crossCutting": false
+  },
+  {
+   "id": "FR-DEF-10",
+   "domain": "DEF",
+   "tag": "NEW",
+   "statement": "Активности перекрёстной оценки (peer review, менторское ревью спринта, 1:1-интервью) описываются одной моделью: Assignment (кто→кого) + Rubric (критерии scale/text) + Submission. Форма ревьюера рендерится из рубрики; координатор конфигурирует активность без внешних форм-сервисов.",
+   "rationale": "Google Forms/Sheets вне платформы = ручной ингест CSV, рассинхрон с ростером и «данные нигде» (Angular июль 2026). Три типа активностей — одна сущность в разной параметризации.",
+   "acceptance": "создание активности с рубрикой достаточно для генерации распределения и форм; сабмишены агрегируются в баллы по правилу активности; внешние формы не требуются.",
+   "source": [
+    {
+     "label": "Angular peer review июль 2026"
+    },
+    {
+     "label": "прототип apps/ai-course (2026-07-18)"
+    }
+   ],
+   "performs": [
+    "coordinator"
+   ],
+   "concerns": [
+    "student",
+    "mentor",
+    "agent"
+   ],
+   "version": 1,
+   "status": "draft",
+   "approvals": [],
+   "phase": [
+    3,
+    6,
+    7
+   ],
+   "crossCutting": false
+  },
+  {
+   "id": "FR-DEF-11",
+   "domain": "DEF",
+   "tag": "NEW",
+   "statement": "Генерация распределения соблюдает жёсткий кап нагрузки (maxPerReviewer) и равномерность (разброс назначений ≤1); при спросе выше ёмкости пула система отказывает ДО генерации, показывая арифметику (нужно назначений / ёмкость пула) и варианты (поднять кап, сузить субъектов, расширить пул).",
+   "rationale": "Tandem: отдельные менторы провели 30–40 финальных интервью — перегруз был невидим до факта. Ёмкость должна быть видимой математикой до анонса активности.",
+   "acceptance": "невозможное распределение не генерируется; сообщение об отказе содержит числа спроса и ёмкости; сгенерированное распределение не нарушает кап и равномерность.",
+   "source": [
+    {
+     "label": "Tandem финальные интервью (перегруз менторов)"
+    },
+    {
+     "label": "прототип apps/ai-course (2026-07-18)"
+    }
+   ],
+   "performs": [
+    "coordinator",
+    "agent"
+   ],
+   "concerns": [
+    "mentor",
+    "student"
+   ],
+   "version": 1,
+   "status": "draft",
+   "approvals": [],
+   "phase": [
+    3,
+    6,
+    7
+   ],
+   "crossCutting": false
+  },
+  {
+   "id": "FR-DEF-12",
+   "domain": "DEF",
+   "tag": "NEW",
+   "statement": "Распределение — данные с операциями: переназначение одного Assignment (с причиной) и «ревьюер выбыл» (превью переназначений его pending-работы → применение). Выполненная работа остаётся засчитанной выбывшему; каждая операция аудируется с актором и попадает в историю Assignment.",
+   "rationale": "Менторы выпадают посреди активности (Angular) — починка не должна быть ручным редактированием замороженного документа. Превью до применения — тот же принцип, что dry-run у баллов.",
+   "acceptance": "превью не мутирует состояние; submitted не переназначается; история хранит from/причину/актора; операции доступны и с экрана, и через API.",
+   "source": [
+    {
+     "label": "Angular июль 2026 (выпадение менторов, переназначения)"
+    },
+    {
+     "label": "решение Воробья 2026-07-18"
+    }
+   ],
+   "performs": [
+    "coordinator",
+    "agent"
+   ],
+   "concerns": [
+    "mentor",
+    "student"
+   ],
+   "version": 1,
+   "status": "draft",
+   "approvals": [],
+   "phase": [
+    6,
+    7
+   ],
+   "crossCutting": false
+  },
+  {
+   "id": "FR-DEF-13",
+   "domain": "DEF",
+   "tag": "NEW",
+   "statement": "Для когорты 1000+ курс определяет явный гейт «кто получает живое 1:1-интервью» (порог по баллам / этап отбора); ёмкость пула интервьюеров сверяется с отобранным множеством до анонса активности.",
+   "rationale": "Прототип: ~700 активных × 1 интервью при 12 менторах × разумный кап — арифметически невозможно. Без гейта единственный выход — анти-паттерн 60+ интервью на ментора. Отбор — решение дизайна курса, не параметр распределения.",
+   "acceptance": "активность «интервью» анонсируется только при capacity ≥ demand по отобранному множеству; критерий отбора опубликован заранее (FR-FAIR-1).",
+   "source": [
+    {
+     "label": "прототип apps/ai-course (2026-07-18): capacity math"
+    }
+   ],
+   "performs": [
+    "coordinator"
+   ],
+   "concerns": [
+    "student",
+    "mentor"
+   ],
+   "version": 1,
+   "status": "draft",
+   "approvals": [],
+   "phase": [
+    7
+   ],
+   "crossCutting": false
+  },
+  {
+   "id": "FR-AGT-9",
+   "domain": "AGT",
+   "tag": "NEW",
+   "statement": "Агент может выполнять операции FR-DEF-12 (переназначение, drop-reviewer) по обращению координатора в чате или по issue от студента — под собственной identity, с тем же аудитом и превью. Права агента равны операционному whitelist, не шире.",
+   "rationale": "«Кидаю проблему в чат — агент чинит»: инциденты распределений (не отвечает эксперт, выпал ментор) чинятся без ручного редактирования данных и без полных прав на курс.",
+   "acceptance": "операция от агента отличима в аудите (actor agent:*); попытка операции вне whitelist отклоняется; человек видит результат в том же логе операций.",
+   "source": [
+    {
+     "label": "решение Воробья 2026-07-18 (chat-ops)"
+    },
+    {
+     "label": "ADR-0002 apps/ai-course"
+    }
+   ],
+   "performs": [
+    "agent"
+   ],
+   "concerns": [
+    "coordinator",
+    "student",
+    "mentor"
+   ],
+   "version": 1,
+   "status": "draft",
+   "approvals": [],
+   "phase": [
+    6,
+    7
+   ],
+   "crossCutting": true
+  },
+  {
+   "id": "FR-SCO-7",
+   "domain": "SCO",
+   "tag": "NEW",
+   "statement": "Внешний сервис (Tandi) записывает баллы только в свои таски и только батчем: обязательный dry-run с дифом (понижения выделены отдельно), применение только с approvedBy-человеком, идемпотентность повторов, двойная атрибуция в аудите (сервисный актор + одобривший человек).",
+   "rationale": "Поправка FR-4 intake (2026-07-16): человек остаётся контролем (apply), перестаёт быть транспортом CSV. Согласовано с FR-AGT-5: агент транспортирует решение, ставит его человек.",
+   "acceptance": "исполняемая форма — контракт-тесты apps/ai-course: dry-run не пишет; apply без approvedBy отклоняется; повтор идемпотентен; запись в чужую таску → 403; в аудите оба актора.",
+   "source": [
+    {
+     "label": "ai-course intake 2026-07 (§3 FR-4)"
+    },
+    {
+     "label": "спек tandi-integration-v1"
+    },
+    {
+     "label": "контракт-тесты apps/ai-course"
+    }
+   ],
+   "performs": [
+    "agent",
+    "coordinator"
+   ],
+   "concerns": [
+    "student",
+    "core"
+   ],
+   "version": 1,
+   "status": "draft",
+   "approvals": [],
+   "phase": [
+    3,
+    7,
+    8
+   ],
+   "crossCutting": true
+  }
+ ],
+ "invariants": [
+  {
+   "id": "INV-1",
+   "tag": "Tandem",
+   "status": "proposed",
+   "statement": "Оценивает код (детерминированно) или человек (субъективно) — не LLM.",
+   "rationale": "Tandem: «оценивает код, не LLM»; LLM только апгрейдит дневник до 80/100 поверх детерминированного 0–60.",
+   "governs": [
+    "FR-SCO-1",
+    "FR-SCO-2",
+    "FR-AGT-5"
+   ],
+   "source": [
+    {
+     "label": "Tandem Q3"
+    }
+   ]
+  },
+  {
+   "id": "INV-2",
+   "tag": "Tandem",
+   "status": "proposed",
+   "statement": "Контракт замораживается на kickoff. Изменения — только в пользу студента и только публично.",
+   "rationale": "lock-rules-at-kickoff: 5 секций read-only после старта; сужение — со следующей когорты.",
+   "governs": [
+    "FR-FAIR-1",
+    "FR-FAIR-2",
+    "FR-FAIR-3"
+   ],
+   "source": [
+    {
+     "label": "lock-rules-at-kickoff"
+    }
+   ]
+  },
+  {
+   "id": "INV-3",
+   "tag": "Tandem",
+   "status": "proposed",
+   "statement": "Каждая команда командного этапа имеет ментора — или явно помечена self-driven.",
+   "rationale": "mentor-staffing-policy: staffing-gate «команд без ментора = 0» как условие старта этапа.",
+   "governs": [
+    "FR-MEN-6",
+    "FR-MEN-4"
+   ],
+   "source": [
+    {
+     "label": "mentor-staffing-policy"
+    }
+   ]
+  },
+  {
+   "id": "INV-4",
+   "tag": "Tandem",
+   "status": "proposed",
+   "statement": "Peer-review — репетиция: идёт в календаре до финальной защиты.",
+   "rationale": "peer-review-precedes-defence: зазор 3–7 дней; календарный валидатор не даёт поставить позже.",
+   "governs": [
+    "FR-DEF-3",
+    "FR-DEF-6"
+   ],
+   "source": [
+    {
+     "label": "peer-review-precedes-defence"
+    }
+   ]
+  },
+  {
+   "id": "INV-5",
+   "tag": "Tandem",
+   "status": "proposed",
+   "statement": "Команда входит в финал, уже умея работать вместе (командный warm-up до финала).",
+   "rationale": "team-warmup-before-final: процессный таск между индивидуальными неделями и финалом.",
+   "governs": [
+    "FR-DEF-7"
+   ],
+   "source": [
+    {
+     "label": "team-warmup-before-final"
+    }
+   ]
+  },
+  {
+   "id": "INV-6",
+   "tag": "Tandem",
+   "status": "proposed",
+   "statement": "Понимание важнее артефакта.",
+   "rationale": "mentor-as-defence-listener: засчитывается код, который студент может объяснить на защите.",
+   "governs": [
+    "FR-STU-3",
+    "FR-MEN-7"
+   ],
+   "source": [
+    {
+     "label": "mentor-as-defence-listener"
+    }
+   ]
+  },
+  {
+   "id": "INV-7",
+   "tag": "Tandem",
+   "status": "proposed",
+   "statement": "Агент — это identity со scope, не супер-юзер и не фейковый человек.",
+   "rationale": "ADR §0/§3.4: SystemActor с owner-Person и явным scope; запрос агента отличим в аудите.",
+   "governs": [
+    "FR-AGT-1",
+    "FR-AGT-2"
+   ],
+   "source": [
+    {
+     "label": "ADR §3.4"
+    }
+   ]
+  },
+  {
+   "id": "INV-8",
+   "tag": "Tandem",
+   "status": "proposed",
+   "statement": "Деплой раньше слова: student-visible статус публикуется после того, как изменение применено.",
+   "rationale": "session-protocol: «deploy first, comment second» — не говорить «исправлено» до того, как фикс виден.",
+   "governs": [
+    "FR-COM-2"
+   ],
+   "source": [
+    {
+     "label": "session-protocol"
+    }
+   ]
+  },
+  {
+   "id": "INV-9",
+   "tag": "Tandem",
+   "status": "proposed",
+   "statement": "Вклад вечен, связи временны.",
+   "rationale": "ADR §9: Contribution immutable и переживает закрытие когорты; MentoringLink/гранты истекают.",
+   "governs": [
+    "FR-PRO-2",
+    "FR-CRD-7"
+   ],
+   "source": [
+    {
+     "label": "ADR §9"
+    }
+   ]
+  },
+  {
+   "id": "INV-10",
+   "tag": "Tandem",
+   "status": "proposed",
+   "statement": "Никаких противоречивых сигналов студенту (красный ✗ или мёртвая ссылка рядом с максимальным баллом).",
+   "rationale": "Tandem feedback: при максимальном балле провальные под-маркеры не рендерятся — блок скрыт, не «объяснён».",
+   "governs": [
+    "FR-FAIR-4"
+   ],
+   "source": [
+    {
+     "label": "Tandem feedback"
+    }
+   ]
+  },
+  {
+   "id": "INV-11",
+   "tag": "NEW",
+   "status": "draft",
+   "statement": "Видимость зовёт, а не стыдит. Дефицит и прогресс других видны как приглашение к участию — без персонального позора и лидерборда.",
+   "rationale": "intake принцип O: «показал, сколько команд без ментора → волонтёров стало больше, чем студентов»; «студенты видят чужие презентации — присоединяются». Поведенческая часть («показывать дефицит/прогресс публично») едет на FR-MEN-6 / FR-COM-3; ↔ FR-SCO-6 (без скатывания в лидерборд).",
+   "governs": [
+    "FR-MEN-6",
+    "FR-COM-3",
+    "FR-SCO-6"
+   ],
+   "source": [
+    {
+     "label": "intake раунд 2 (O / Q20b)"
+    }
+   ]
+  },
+  {
+   "id": "INV-12",
+   "tag": "NEW",
+   "status": "draft",
+   "statement": "Agentic-first ≠ headless: у каждой роли есть и человеческий UI, и MCP/context-pack — над одним API.",
+   "rationale": "intake Q16: agentic-first не значит «без интерфейсов». Функциональная часть «через агента доступно всё, что через UI» — в FR-STU-6. Архитектурная часть «единый API под UI и MCP» — в ADR §5 (пометка для ADR, здесь не дублируется).",
+   "governs": [
+    "FR-STU-6"
+   ],
+   "source": [
+    {
+     "label": "intake раунд 1 (Q16)"
+    }
+   ]
+  }
+ ]
 }
